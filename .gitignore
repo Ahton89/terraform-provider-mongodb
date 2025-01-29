@@ -1,3 +1,6 @@
 .DS_Store
 dist/
 .idea/
+_examples/**/.terraform/
+_examples/**/.terraform.*
+_examples/**/terraform.*

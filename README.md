@@ -2,7 +2,7 @@
     <img src=".github/tf.png" alt="Terraform logo" title="Terraform" align="left" height="50" />
 </a>
 
-# Kubernetes Provider for MongoDB
+# Terraform Provider for MongoDB
 This is a Terraform provider for MongoDB. It allows you to manage MongoDB resources using Terraform.
 
 ## At the moment, the provider can:
