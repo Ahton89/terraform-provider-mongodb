@@ -17,4 +17,4 @@ description: |-
 
 ### Required
 
-- `name` (String) The name of the database to create.
+- `name` (String) Database name to create.

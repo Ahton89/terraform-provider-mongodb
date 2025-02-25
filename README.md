@@ -14,9 +14,16 @@ This is a Terraform provider for MongoDB. It allows you to manage MongoDB resour
 > [!CAUTION]
 > When changing the username - the old user will be deleted. Carefully read the plan output, the "stringplanmodifier.RequiresReplace()" option was made specifically for this
 
-- `Return information` on all available databases (collections) and users. `[DATA SOURCES]`
+- `Create/Modify` replica set.
+> [!CAUTION]
+> Delete replica set and change replica set name is not supported. This requires additional steps, so you will need to do it manually.
 
-- `Import` user and database data from an existing MongoDB instance.
+- `Return information` on all available databases (collections), users, replica set `[DATA SOURCES]`
+
+- `Import` user, database and replica set data from an existing MongoDB instance.
+
+> [!CAUTION]
+> Support only MongoDB v6
 
 ## Examples
 ⚠️ See the terraform examples in the [examples](_examples) directory. 
@@ -24,8 +31,10 @@ This is a Terraform provider for MongoDB. It allows you to manage MongoDB resour
 #### Supported examples:
 - [Create/Delete database](_examples/database)
 - [Create/Delete/Modify user](_examples/user)
-- [Databases data source](_examples/databases)
-- [Users data source](_examples/users)
+- [Create/Modify replica set](_examples/replicaset)
+- [Databases data source](_examples/databases_datasource)
+- [Users data source](_examples/users_datasource)
+- [Replica set data source](_examples/replicaset_datasource)
 
 ## Local development
 1. Clone the repository
@@ -47,7 +56,7 @@ provider_installation {
 > Replace `/Users/YOUR_USER/go/bin` with the path to the directory where the provider was installed in the previous step
 4. Run your local docker mongodb instance 
 ```shell
-  docker run --name mongodb -e MONGO_INITDB_ROOT_USERNAME=admin -e MONGO_INITDB_ROOT_PASSWORD=admin -e MONGO_INITDB_DATABASE=admin -p 127.0.0.1:27017:27017 mongo:4.4.28
+  docker run --name mongodb -e MONGO_INITDB_ROOT_USERNAME=admin -e MONGO_INITDB_ROOT_PASSWORD=admin -e MONGO_INITDB_DATABASE=admin -p 127.0.0.1:27017:27017 mongo:6.0.5
 ```
 5. Go to the [examples](_examples) directory and run `terraform plan` and `terraform apply` to test the provider
 

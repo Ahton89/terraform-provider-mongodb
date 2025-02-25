@@ -33,8 +33,8 @@ func main() {
 	p := provider.New(version)
 
 	defer func() {
-		if prov, ok := p().(*provider.MongodbProvider); ok && prov.Client != nil {
-			if err := prov.Client.Disconnect(ctx); err != nil {
+		if prov, ok := p().(*provider.MongoDBProvider); ok && prov.MongoDB != nil {
+			if err := prov.MongoDB.Disconnect(ctx); err != nil {
 				log.Fatal(err.Error())
 			}
 		}
