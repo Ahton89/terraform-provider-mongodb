@@ -19,7 +19,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - '-s -w -X main.version={{.Version}}+{{.ShortCommit}} -X terraform-provider-mongodb/internal/provider.minVersion=4.4.0'
+      - '-s -w -X main.version={{.Version}}+{{.ShortCommit}} -X terraform-provider-mongodb/internal/mongoclient.requiredVersion=6'
     goos:
       - linux
       - windows

@@ -1,6 +1,6 @@
-VERSION := 0.1.0
-MONGODB_MIN_VERSION = 4.4.0
-LDFLAGS = "-X 'main.version=$(VERSION)' -X 'terraform-provider-mongodb/internal/provider.minVersion=$(MONGODB_MIN_VERSION)'"
+VERSION := 0.2.0
+MONGODB_MIN_VERSION = 6
+LDFLAGS = "-X 'main.version=$(VERSION)' -X 'terraform-provider-mongodb/internal/mongoclient.requiredVersion=$(MONGODB_MIN_VERSION)'"
 APP_NAME = terraform-provider-mongodb
 OS ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 ARCH ?= arm64

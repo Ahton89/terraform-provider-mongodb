@@ -24,6 +24,7 @@ description: |-
 
 Read-Only:
 
+- `password` (String)
 - `roles` (Attributes List) (see [below for nested schema](#nestedatt--users--roles))
 - `username` (String)
 
