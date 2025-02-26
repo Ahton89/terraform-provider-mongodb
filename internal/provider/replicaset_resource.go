@@ -225,7 +225,7 @@ func (r *resourceReplicaSet) Update(ctx context.Context, req resource.UpdateRequ
 }
 
 func (r *resourceReplicaSet) Delete(_ context.Context, _ resource.DeleteRequest, resp *resource.DeleteResponse) {
-	resp.Diagnostics.AddError(
+	resp.Diagnostics.AddWarning(
 		"Delete Not Supported",
 		"The delete method is not implemented for this resource, because it requires manual actions from the administrator.",
 	)
