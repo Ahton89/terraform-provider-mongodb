@@ -1,4 +1,4 @@
-VERSION := 0.2.0
+VERSION := 0.2.2
 MONGODB_MIN_VERSION = 6
 LDFLAGS = "-X 'main.version=$(VERSION)' -X 'terraform-provider-mongodb/internal/mongoclient.requiredVersion=$(MONGODB_MIN_VERSION)'"
 APP_NAME = terraform-provider-mongodb

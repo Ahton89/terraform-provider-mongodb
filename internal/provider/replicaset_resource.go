@@ -153,7 +153,7 @@ func (r *resourceReplicaSet) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	err := r.client.Provider().Resource().ReplicaSet().Create(ctx, plan)
+	err := r.client.Resource().ReplicaSet().Create(ctx, plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to create replica set",
@@ -178,7 +178,7 @@ func (r *resourceReplicaSet) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	exist, err := r.client.Provider().Resource().ReplicaSet().Exists(ctx, state)
+	exist, err := r.client.Resource().ReplicaSet().Exists(ctx, state)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to check replica set existence",
@@ -188,6 +188,20 @@ func (r *resourceReplicaSet) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	if !exist {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
+	ready, err := r.client.Resource().ReplicaSet().Ready(ctx, state)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Failed to check replica set readiness",
+			err.Error(),
+		)
+		return
+	}
+
+	if !ready {
 		resp.State.RemoveResource(ctx)
 		return
 	}
@@ -208,7 +222,7 @@ func (r *resourceReplicaSet) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	err := r.client.Provider().Resource().ReplicaSet().Update(ctx, plan)
+	err := r.client.Resource().ReplicaSet().Update(ctx, plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to update replica set",
@@ -234,7 +248,7 @@ func (r *resourceReplicaSet) Delete(_ context.Context, _ resource.DeleteRequest,
 func (r *resourceReplicaSet) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	name := req.ID
 
-	state, err := r.client.Provider().Resource().ReplicaSet().ImportState(ctx, name)
+	state, err := r.client.Resource().ReplicaSet().ImportState(ctx, name)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to import replica set",

@@ -6,16 +6,12 @@ import (
 	"terraform-provider-mongodb/internal/mongoclient/types"
 )
 
-type Client interface {
-	Disconnect(ctx context.Context) error
-	Ping(ctx context.Context) error
-	Provider() Provider
-	Version() string
-}
+/* CLIENT */
 
-type Provider interface {
+type Client interface {
 	DataSource() DataSource
 	Resource() Resource
+	RequiredVersion(ctx context.Context) error
 }
 
 /* DATA SOURCE */
@@ -65,5 +61,6 @@ type ResourceReplicaSet interface {
 	Create(ctx context.Context, plan types.ReplicaSet) error
 	Update(ctx context.Context, plan types.ReplicaSet) error
 	Exists(ctx context.Context, state types.ReplicaSet) (bool, error)
+	Ready(ctx context.Context, state types.ReplicaSet) (bool, error)
 	ImportState(ctx context.Context, name string) (types.ReplicaSet, error)
 }

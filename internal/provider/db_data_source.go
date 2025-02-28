@@ -45,10 +45,10 @@ func (d *dataSourceDatabases) Schema(_ context.Context, _ datasource.SchemaReque
 }
 
 func (d *dataSourceDatabases) Read(ctx context.Context, _ datasource.ReadRequest, resp *datasource.ReadResponse) {
-	state, err := d.client.Provider().DataSource().Database().Read(ctx)
+	state, err := d.client.DataSource().Database().Read(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Failed to read databases",
+			"Read databases failed",
 			err.Error(),
 		)
 
@@ -71,7 +71,7 @@ func (d *dataSourceDatabases) Configure(_ context.Context, req datasource.Config
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected interfaces.Client, got: %T. Please report this issue to the SRE team.", req.ProviderData),
+			fmt.Sprintf("Expected interfaces.Client, got: %T.", req.ProviderData),
 		)
 
 		return

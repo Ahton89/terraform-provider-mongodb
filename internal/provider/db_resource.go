@@ -53,10 +53,10 @@ func (r *resourceDatabase) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	err := r.client.Provider().Resource().Database().Create(ctx, plan)
+	err := r.client.Resource().Database().Create(ctx, plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Failed to create database",
+			"Create database failed",
 			err.Error(),
 		)
 		return
@@ -78,10 +78,10 @@ func (r *resourceDatabase) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	exist, err := r.client.Provider().Resource().Database().Exists(ctx, state)
+	exist, err := r.client.Resource().Database().Exists(ctx, state)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Failed to check database existence",
+			"CHeck database existence failed",
 			err.Error(),
 		)
 		return
@@ -115,10 +115,10 @@ func (r *resourceDatabase) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	err := r.client.Provider().Resource().Database().Delete(ctx, state)
+	err := r.client.Resource().Database().Delete(ctx, state)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Failed to delete database",
+			"Delete database failed",
 			err.Error(),
 		)
 		return
@@ -128,10 +128,10 @@ func (r *resourceDatabase) Delete(ctx context.Context, req resource.DeleteReques
 func (r *resourceDatabase) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	database := req.ID
 
-	state, err := r.client.Provider().Resource().Database().ImportState(ctx, database)
+	state, err := r.client.Resource().Database().ImportState(ctx, database)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Failed to import database state",
+			"Import database state failed",
 			err.Error(),
 		)
 		return
@@ -153,7 +153,7 @@ func (r *resourceDatabase) Configure(_ context.Context, req resource.ConfigureRe
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected interfaces.Client, got: %T. Please report this issue to the SRE team.", req.ProviderData),
+			fmt.Sprintf("Expected interfaces.Client, got: %T.", req.ProviderData),
 		)
 
 		return

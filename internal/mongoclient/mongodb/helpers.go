@@ -1,4 +1,4 @@
-package v6
+package mongodb
 
 import (
 	"context"
@@ -11,22 +11,6 @@ import (
 )
 
 /* DATABASES */
-
-func listDatabases(ctx context.Context, client *mongo.Client) ([]string, error) {
-	d, err := client.ListDatabaseNames(
-		ctx,
-		bson.M{
-			"name": bson.M{
-				"$nin": defaultDatabases,
-			},
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return d, nil
-}
 
 func createDatabase(ctx context.Context, client *mongo.Client, name string) error {
 	db := client.Database(name)
@@ -56,7 +40,7 @@ func deleteDatabase(ctx context.Context, client *mongo.Client, name string) erro
 }
 
 func isDefaultDatabase(name string) bool {
-	return slices.Contains(defaultDatabases, name)
+	return slices.Contains(types.DefaultDatabases, name)
 }
 
 /* USERS */
@@ -64,7 +48,7 @@ func isDefaultDatabase(name string) bool {
 func listUsers(ctx context.Context, client *mongo.Client) (types.Users, error) {
 	r := types.Users{}
 
-	err := client.Database(defaultDatabase).RunCommand(ctx, bson.D{
+	err := client.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{
 		{"usersInfo", 1},
 	}).Decode(&r)
 
@@ -72,7 +56,7 @@ func listUsers(ctx context.Context, client *mongo.Client) (types.Users, error) {
 }
 
 func isDefaultUser(username string) bool {
-	return slices.Contains(defaultUsers, username)
+	return slices.Contains(types.DefaultUsers, username)
 }
 
 func userExists(ctx context.Context, client *mongo.Client, username string) (bool, error) {
@@ -82,4 +66,37 @@ func userExists(ctx context.Context, client *mongo.Client, username string) (boo
 	}
 
 	return u.Exist(username), nil
+}
+
+/* REPLICASET */
+
+func getReplicaSetStatus(ctx context.Context, client *mongo.Client) (*types.ReplicaSetStatus, error) {
+	status := types.ReplicaSetStatus{}
+
+	err := client.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{{"replSetGetStatus", 1}}).Decode(&status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
+
+func isReplicaSetReady(status *types.ReplicaSetStatus, replicaSetName string) bool {
+	if status.OK != 1 || status.Set != replicaSetName {
+		return false
+	}
+
+	hasPrimary := false
+	allMembersOk := true
+
+	for _, member := range status.Members {
+		if member.Health != 1 {
+			allMembersOk = false
+		}
+		if member.StateStr == "PRIMARY" {
+			hasPrimary = true
+		}
+	}
+
+	return hasPrimary && allMembersOk
 }

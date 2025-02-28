@@ -1,5 +1,9 @@
 package types
 
+var (
+	DefaultUsers = []string{"admin"} // Default users to exclude from listing
+)
+
 /* USER */
 
 type Users struct {

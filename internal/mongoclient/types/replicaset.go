@@ -80,3 +80,13 @@ func (r *ReplicaSet) RemoveDefaults() {
 		}
 	}
 }
+
+type ReplicaSetStatus struct {
+	OK      int    `bson:"ok"`
+	Set     string `bson:"set"`
+	Members []struct {
+		Name     string `bson:"name"`
+		StateStr string `bson:"stateStr"`
+		Health   int    `bson:"health"`
+	} `bson:"members"`
+}

@@ -73,7 +73,7 @@ func (r *resourceUser) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	err := r.client.Provider().Resource().User().Create(ctx, plan)
+	err := r.client.Resource().User().Create(ctx, plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to create user",
@@ -98,7 +98,7 @@ func (r *resourceUser) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	exist, err := r.client.Provider().Resource().User().Exists(ctx, state)
+	exist, err := r.client.Resource().User().Exists(ctx, state)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to check user existence",
@@ -128,7 +128,7 @@ func (r *resourceUser) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	err := r.client.Provider().Resource().User().Update(ctx, plan)
+	err := r.client.Resource().User().Update(ctx, plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to update user",
@@ -153,7 +153,7 @@ func (r *resourceUser) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	err := r.client.Provider().Resource().User().Delete(ctx, state)
+	err := r.client.Resource().User().Delete(ctx, state)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to delete user",
@@ -166,7 +166,7 @@ func (r *resourceUser) Delete(ctx context.Context, req resource.DeleteRequest, r
 func (r *resourceUser) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	username := req.ID
 
-	state, err := r.client.Provider().Resource().User().ImportState(ctx, username)
+	state, err := r.client.Resource().User().ImportState(ctx, username)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to import user state",

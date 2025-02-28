@@ -60,7 +60,7 @@ func (d *dataSourceUsers) Schema(_ context.Context, _ datasource.SchemaRequest, 
 }
 
 func (d *dataSourceUsers) Read(ctx context.Context, _ datasource.ReadRequest, resp *datasource.ReadResponse) {
-	state, err := d.client.Provider().DataSource().User().Read(ctx)
+	state, err := d.client.DataSource().User().Read(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to read users",

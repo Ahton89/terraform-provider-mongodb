@@ -12,23 +12,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"terraform-provider-mongodb/internal/mongoclient"
-	"terraform-provider-mongodb/internal/mongoclient/interfaces"
 )
 
 var (
-	_ provider.Provider = &MongoDBProvider{}
+	_ provider.Provider = &mongoDBProvider{}
 )
 
 func New(version string) func() provider.Provider {
 	return func() provider.Provider {
-		return &MongoDBProvider{
+		return &mongoDBProvider{
 			Version: version,
 		}
 	}
 }
 
-type MongoDBProvider struct {
-	MongoDB interfaces.Client
+type mongoDBProvider struct {
 	Version string
 }
 
@@ -36,12 +34,12 @@ type mongodb struct {
 	ConnectionString types.String `tfsdk:"connection_string"`
 }
 
-func (m *MongoDBProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
+func (m *mongoDBProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "mongodb"
 	resp.Version = m.Version
 }
 
-func (m *MongoDBProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
+func (m *mongoDBProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"connection_string": schema.StringAttribute{
@@ -60,7 +58,7 @@ func (m *MongoDBProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 	}
 }
 
-func (m *MongoDBProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+func (m *mongoDBProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	var config mongodb
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
@@ -68,20 +66,12 @@ func (m *MongoDBProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
-	client, err := mongoclient.New(ctx, config.ConnectionString.ValueString())
+	client := mongoclient.New(config.ConnectionString.ValueString())
 
+	err := client.RequiredVersion(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Failed to create MongoDB client",
-			err.Error(),
-		)
-		return
-	}
-
-	err = client.Ping(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to check MongoDB connection",
+			"Version check failed",
 			err.Error(),
 		)
 		return
@@ -89,11 +79,9 @@ func (m *MongoDBProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 	resp.DataSourceData = client
 	resp.ResourceData = client
-
-	m.MongoDB = client
 }
 
-func (m *MongoDBProvider) DataSources(_ context.Context) []func() datasource.DataSource {
+func (m *mongoDBProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		DataSourceDatabases,
 		DataSourceUsers,
@@ -101,7 +89,7 @@ func (m *MongoDBProvider) DataSources(_ context.Context) []func() datasource.Dat
 	}
 }
 
-func (m *MongoDBProvider) Resources(_ context.Context) []func() resource.Resource {
+func (m *mongoDBProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		ResourceDatabase,
 		ResourceUser,

@@ -108,7 +108,7 @@ func (d *dataSourceReplicaSet) Schema(_ context.Context, _ datasource.SchemaRequ
 }
 
 func (d *dataSourceReplicaSet) Read(ctx context.Context, _ datasource.ReadRequest, resp *datasource.ReadResponse) {
-	state, err := d.client.Provider().DataSource().ReplicaSet().Read(ctx)
+	state, err := d.client.DataSource().ReplicaSet().Read(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to read replicaset",
