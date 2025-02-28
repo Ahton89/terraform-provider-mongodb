@@ -70,6 +70,12 @@ func (c *client) RequiredVersion(ctx context.Context) error {
 }
 
 func (c *client) connect() (*mongo.Client, error) {
+	// Use direct connection to avoid replica set check
+	// This connection needs for version check only
 	opts := options.Client().ApplyURI(c.uri)
+	opts.ReplicaSet = nil
+	opts.Hosts = []string{opts.Hosts[0]}
+	opts.SetDirect(true)
+
 	return mongo.Connect(opts)
 }
