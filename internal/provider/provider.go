@@ -68,15 +68,6 @@ func (m *mongoDBProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 	client := mongoclient.New(config.ConnectionString.ValueString())
 
-	err := client.RequiredVersion(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Version check failed",
-			err.Error(),
-		)
-		return
-	}
-
 	resp.DataSourceData = client
 	resp.ResourceData = client
 }

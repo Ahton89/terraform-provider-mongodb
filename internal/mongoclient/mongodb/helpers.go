@@ -2,7 +2,9 @@ package mongodb
 
 import (
 	"context"
+	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -12,6 +14,7 @@ import (
 
 /* DATABASES */
 
+// createDatabase creates a new database in the MongoDB.
 func createDatabase(ctx context.Context, client *mongo.Client, name string) error {
 	db := client.Database(name)
 	collection := db.Collection("created_by_terraform")
@@ -21,6 +24,7 @@ func createDatabase(ctx context.Context, client *mongo.Client, name string) erro
 	return err
 }
 
+// databaseExists checks if the database already exists in the MongoDB.
 func databaseExists(ctx context.Context, client *mongo.Client, name string) (bool, error) {
 	d, err := client.ListDatabaseNames(
 		ctx,
@@ -35,16 +39,19 @@ func databaseExists(ctx context.Context, client *mongo.Client, name string) (boo
 	return len(d) > 0, nil
 }
 
+// deleteDatabase deletes the database.
 func deleteDatabase(ctx context.Context, client *mongo.Client, name string) error {
 	return client.Database(name).Drop(ctx)
 }
 
+// isDefaultDatabase checks if the database is a default database.
 func isDefaultDatabase(name string) bool {
 	return slices.Contains(types.DefaultDatabases, name)
 }
 
 /* USERS */
 
+// listUsers returns a list of users in the database.
 func listUsers(ctx context.Context, client *mongo.Client) (types.Users, error) {
 	r := types.Users{}
 
@@ -55,10 +62,12 @@ func listUsers(ctx context.Context, client *mongo.Client) (types.Users, error) {
 	return r, err
 }
 
+// isDefaultUser checks if the user is a default user.
 func isDefaultUser(username string) bool {
 	return slices.Contains(types.DefaultUsers, username)
 }
 
+// userExists checks if the user already exists in the database.
 func userExists(ctx context.Context, client *mongo.Client, username string) (bool, error) {
 	u, err := listUsers(ctx, client)
 	if err != nil {
@@ -70,6 +79,8 @@ func userExists(ctx context.Context, client *mongo.Client, username string) (boo
 
 /* REPLICASET */
 
+// getReplicaSetStatus returns the status of the replica set.
+// Using the isReplicaSetReady function, we can check if the replica set is ready and has a primary node.
 func getReplicaSetStatus(ctx context.Context, client *mongo.Client) (*types.ReplicaSetStatus, error) {
 	status := types.ReplicaSetStatus{}
 
@@ -81,6 +92,7 @@ func getReplicaSetStatus(ctx context.Context, client *mongo.Client) (*types.Repl
 	return &status, nil
 }
 
+// isReplicaSetReady checks if the replica set is ready and has a primary node.
 func isReplicaSetReady(status *types.ReplicaSetStatus, replicaSetName string) bool {
 	if status.OK != 1 || status.Set != replicaSetName {
 		return false
@@ -99,4 +111,25 @@ func isReplicaSetReady(status *types.ReplicaSetStatus, replicaSetName string) bo
 	}
 
 	return hasPrimary && allMembersOk
+}
+
+// requiredVersion checks if the current MongoDB version is supported by the provider.
+// This is necessary because different versions have different key names for the replica set configuration.
+func requiredVersion(ctx context.Context, client *mongo.Client) error {
+	var v struct {
+		Version string `bson:"version"`
+	}
+
+	err := client.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{{"buildInfo", 1}}).Decode(&v)
+	if err != nil {
+		return fmt.Errorf("failed to get MongoDB version: %s", err)
+	}
+
+	vPrefix := fmt.Sprintf("%s.", types.MongoDBRequiredVersion)
+
+	if !strings.HasPrefix(v.Version, vPrefix) {
+		return fmt.Errorf("unsupported MongoDB version. Current version is %s, but provider required only %s version", v.Version, types.MongoDBRequiredVersion)
+	}
+
+	return nil
 }

@@ -1,5 +1,9 @@
 package types
 
+const (
+	MongoDBRequiredVersion = "6"
+)
+
 type ReplicaSetResponse struct {
 	Config ReplicaSet `bson:"config"`
 }

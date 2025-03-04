@@ -23,6 +23,11 @@ func (d *DataSourceReplicaSet) Read(ctx context.Context) (types.ReplicaSet, erro
 		_ = c.Disconnect(ctx)
 	}()
 
+	err = requiredVersion(ctx, c)
+	if err != nil {
+		return types.ReplicaSet{}, fmt.Errorf("required version check failed with error: %s", err)
+	}
+
 	err = c.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{
 		{"replSetGetConfig", 1},
 	}).Decode(&rsc)

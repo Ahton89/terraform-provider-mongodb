@@ -21,6 +21,11 @@ func (r *ResourceReplicaSet) Create(ctx context.Context, plan types.ReplicaSet) 
 		_ = c.Disconnect(ctx)
 	}()
 
+	err = requiredVersion(ctx, c)
+	if err != nil {
+		return fmt.Errorf("required version check failed with error: %s", err)
+	}
+
 	err = c.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{
 		{"replSetInitiate", plan},
 	}).Err()
@@ -42,6 +47,11 @@ func (r *ResourceReplicaSet) Exists(ctx context.Context, state types.ReplicaSet)
 	defer func() {
 		_ = c.Disconnect(ctx)
 	}()
+
+	err = requiredVersion(ctx, c)
+	if err != nil {
+		return false, fmt.Errorf("required version check failed with error: %s", err)
+	}
 
 	err = c.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{
 		{"replSetGetConfig", 1},
@@ -76,6 +86,11 @@ func (r *ResourceReplicaSet) Ready(ctx context.Context, state types.ReplicaSet) 
 		_ = c.Disconnect(ctx)
 	}()
 
+	err = requiredVersion(ctx, c)
+	if err != nil {
+		return false, fmt.Errorf("required version check failed with error: %s", err)
+	}
+
 	status, err := getReplicaSetStatus(ctx, c)
 	if err != nil {
 		return false, fmt.Errorf("get replica set status failed with error: %s", err)
@@ -93,6 +108,11 @@ func (r *ResourceReplicaSet) Update(ctx context.Context, state types.ReplicaSet)
 	defer func() {
 		_ = c.Disconnect(ctx)
 	}()
+
+	err = requiredVersion(ctx, c)
+	if err != nil {
+		return fmt.Errorf("required version check failed with error: %s", err)
+	}
 
 	status, err := getReplicaSetStatus(ctx, c)
 	if err != nil {
@@ -124,6 +144,11 @@ func (r *ResourceReplicaSet) ImportState(ctx context.Context, name string) (type
 	defer func() {
 		_ = c.Disconnect(ctx)
 	}()
+
+	err = requiredVersion(ctx, c)
+	if err != nil {
+		return types.ReplicaSet{}, fmt.Errorf("required version check failed with error: %s", err)
+	}
 
 	err = c.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{
 		{"replSetGetConfig", 1},
