@@ -4,7 +4,7 @@ const (
 	MongoDBRequiredVersion = "6"
 )
 
-type ReplicaSetResponse struct {
+type ReplicaSetConfig struct {
 	Config ReplicaSet `bson:"config"`
 }
 type ReplicaSet struct {

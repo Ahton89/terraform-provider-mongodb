@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -90,6 +91,33 @@ func getReplicaSetStatus(ctx context.Context, client *mongo.Client) (*types.Repl
 	}
 
 	return &status, nil
+}
+
+// getReplicaSetConfig returns the configuration of the replica set.
+func getReplicaSetConfig(ctx context.Context, client *mongo.Client) (*types.ReplicaSetConfig, error) {
+	rsc := types.ReplicaSetConfig{}
+
+	err := client.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{
+		{"replSetGetConfig", 1},
+	}).Decode(&rsc)
+
+	if err != nil {
+		var commandErr mongo.CommandError
+
+		// NotYetInitialized
+		if errors.As(err, &commandErr) && commandErr.Code == 94 {
+			return &rsc, fmt.Errorf("replica set not initialized. Please create, plan and apply mongodb_replicaset resource first")
+		}
+
+		// NoReplicationEnabled
+		if errors.As(err, &commandErr) && commandErr.Code == 76 {
+			return &rsc, fmt.Errorf("replication not enabled. Please add replSetName in your mongod.conf file, then create, plan and apply mongodb_replicaset resource first")
+		}
+
+		return &rsc, fmt.Errorf("get replica set config failed with error: %s", err)
+	}
+
+	return &rsc, nil
 }
 
 // isReplicaSetReady checks if the replica set is ready and has a primary node.

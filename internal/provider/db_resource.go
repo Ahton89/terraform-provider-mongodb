@@ -56,7 +56,7 @@ func (r *resourceDatabase) Create(ctx context.Context, req resource.CreateReques
 	err := r.client.Resource().Database().Create(ctx, plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Create database failed",
+			"Failed to create database",
 			err.Error(),
 		)
 		return
@@ -81,7 +81,7 @@ func (r *resourceDatabase) Read(ctx context.Context, req resource.ReadRequest, r
 	exist, err := r.client.Resource().Database().Exists(ctx, state)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"CHeck database existence failed",
+			"Failed to check database existence",
 			err.Error(),
 		)
 		return
@@ -118,7 +118,7 @@ func (r *resourceDatabase) Delete(ctx context.Context, req resource.DeleteReques
 	err := r.client.Resource().Database().Delete(ctx, state)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Delete database failed",
+			"Failed to delete database",
 			err.Error(),
 		)
 		return
@@ -131,7 +131,7 @@ func (r *resourceDatabase) ImportState(ctx context.Context, req resource.ImportS
 	state, err := r.client.Resource().Database().ImportState(ctx, database)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Import database state failed",
+			"Failed to import database",
 			err.Error(),
 		)
 		return

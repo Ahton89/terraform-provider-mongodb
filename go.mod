@@ -1,9 +1,8 @@
 module terraform-provider-mongodb
 
-go 1.23
+go 1.23.4
 
 require (
-	github.com/blang/semver/v4 v4.0.0
 	github.com/hashicorp/terraform-plugin-framework v1.13.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.16.0
 	go.mongodb.org/mongo-driver/v2 v2.0.0

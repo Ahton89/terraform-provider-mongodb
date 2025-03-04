@@ -48,7 +48,7 @@ func (d *dataSourceDatabases) Read(ctx context.Context, _ datasource.ReadRequest
 	state, err := d.client.DataSource().Database().Read(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Read databases failed",
+			"Failed to read databases",
 			err.Error(),
 		)
 
