@@ -11,7 +11,6 @@ import (
 type Client interface {
 	DataSource() DataSource
 	Resource() Resource
-	RequiredVersion(ctx context.Context) error
 }
 
 /* DATA SOURCE */
