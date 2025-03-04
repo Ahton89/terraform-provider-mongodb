@@ -202,7 +202,10 @@ func (r *resourceReplicaSet) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	if !ready {
-		resp.State.RemoveResource(ctx)
+		resp.Diagnostics.AddError(
+			"Replica set not ready",
+			fmt.Sprintf("The replica set %s is not ready or corrupted.", state.Name),
+		)
 		return
 	}
 
