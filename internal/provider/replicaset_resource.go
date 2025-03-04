@@ -35,6 +35,10 @@ func (r *resourceReplicaSet) Metadata(_ context.Context, req resource.MetadataRe
 
 func (r *resourceReplicaSet) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: "> **IMPORTANT: Updating members in a replica set can currently only add/change\n" +
+			"> members one at a time. This functionality will be improved, but to avoid errors - add/change\n" +
+			"> members in an existing replica set one at a time. This does not apply to the first creation of\n" +
+			"> a replica set, when first created you can specify an arbitrary number of members**",
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Required:    true,
@@ -188,20 +192,6 @@ func (r *resourceReplicaSet) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	if !exist {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	ready, err := r.client.Resource().ReplicaSet().Ready(ctx, state)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to check replica set readiness",
-			err.Error(),
-		)
-		return
-	}
-
-	if !ready {
 		resp.State.RemoveResource(ctx)
 		return
 	}

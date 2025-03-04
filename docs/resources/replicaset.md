@@ -3,12 +3,18 @@
 page_title: "mongodb_replicaset Resource - terraform-provider-mongodb"
 subcategory: ""
 description: |-
-  
+  **IMPORTANT: Updating members in a replica set can currently only add/change
+  members one at a time. This functionality will be improved, but to avoid errors - add/change
+  members in an existing replica set one at a time. This does not apply to the first creation of
+  a replica set, when first created you can specify an arbitrary number of members**
 ---
 
 # mongodb_replicaset (Resource)
 
-
+> **IMPORTANT: Updating members in a replica set can currently only add/change
+> members one at a time. This functionality will be improved, but to avoid errors - add/change
+> members in an existing replica set one at a time. This does not apply to the first creation of
+> a replica set, when first created you can specify an arbitrary number of members**
 
 
 

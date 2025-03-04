@@ -60,6 +60,5 @@ type ResourceReplicaSet interface {
 	Create(ctx context.Context, plan types.ReplicaSet) error
 	Update(ctx context.Context, plan types.ReplicaSet) error
 	Exists(ctx context.Context, state types.ReplicaSet) (bool, error)
-	Ready(ctx context.Context, state types.ReplicaSet) (bool, error)
 	ImportState(ctx context.Context, name string) (types.ReplicaSet, error)
 }

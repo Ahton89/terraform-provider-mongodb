@@ -69,7 +69,7 @@ The provider supports importing existing resources. The import command is as fol
 
 ## Requirements
 -	[Terraform](https://www.terraform.io/downloads.html) 1.6.3+ (everything was tested on this version)
--	[Go](https://golang.org/doc/install) 1.23+ (to build the provider plugin)
+-	[Go](https://golang.org/doc/install) 1.23.4 (to build the provider plugin)
 
 
 ## Contributing to the provider

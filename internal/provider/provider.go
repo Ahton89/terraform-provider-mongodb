@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -12,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"terraform-provider-mongodb/internal/mongoclient"
+	mongoclientTypes "terraform-provider-mongodb/internal/mongoclient/types"
 )
 
 var (
@@ -41,6 +43,9 @@ func (m *mongoDBProvider) Metadata(_ context.Context, _ provider.MetadataRequest
 
 func (m *mongoDBProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: fmt.Sprintf(
+			"> **IMPORTANT: This provider supports only MongoDB v%s**", mongoclientTypes.MongoDBRequiredVersion,
+		),
 		Attributes: map[string]schema.Attribute{
 			"connection_string": schema.StringAttribute{
 				Required:    true,
