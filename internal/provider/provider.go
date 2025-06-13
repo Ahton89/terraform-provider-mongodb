@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -34,6 +35,8 @@ type mongoDBProvider struct {
 
 type mongodb struct {
 	ConnectionString types.String `tfsdk:"connection_string"`
+	RetryAttempts    types.Int32  `tfsdk:"retry_attempts"`
+	RetryDelaySec    types.Int32  `tfsdk:"retry_delay_sec"`
 }
 
 func (m *mongoDBProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -59,6 +62,20 @@ func (m *mongoDBProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 					),
 				},
 			},
+			"retry_attempts": schema.Int32Attribute{
+				Optional:    true,
+				Description: "The number of retry attempts for operations that fail due to transient errors.",
+				Validators: []validator.Int32{
+					int32validator.AtLeast(1),
+				},
+			},
+			"retry_delay_sec": schema.Int32Attribute{
+				Optional:    true,
+				Description: "The delay in seconds between retry attempts.",
+				Validators: []validator.Int32{
+					int32validator.AtLeast(1),
+				},
+			},
 		},
 	}
 }
@@ -71,7 +88,11 @@ func (m *mongoDBProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
-	client := mongoclient.New(config.ConnectionString.ValueString())
+	client := mongoclient.New(
+		config.ConnectionString.ValueString(),
+		uint(config.RetryAttempts.ValueInt32()),
+		uint(config.RetryDelaySec.ValueInt32()),
+	)
 
 	resp.DataSourceData = client
 	resp.ResourceData = client
