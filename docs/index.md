@@ -18,3 +18,8 @@ description: |-
 ### Required
 
 - `connection_string` (String) The connection string to the MongoDB.
+
+### Optional
+
+- `retry_attempts` (Number) The number of retry attempts for operations that fail due to transient errors.
+- `retry_delay_sec` (Number) The delay in seconds between retry attempts.

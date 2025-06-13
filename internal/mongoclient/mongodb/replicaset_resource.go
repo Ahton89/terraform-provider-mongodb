@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/avast/retry-go/v4"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -12,137 +13,203 @@ import (
 )
 
 func (r *ResourceReplicaSet) Create(ctx context.Context, plan types.ReplicaSet) error {
-	c, err := r.directConnect()
-	if err != nil {
-		return fmt.Errorf("connection to MongoDB failed with error: %s", err)
-	}
+	err := retry.Do(
+		func() error {
+			c, err := r.directConnect(ctx)
+			if err != nil {
+				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
+			}
 
-	defer func() {
-		_ = c.Disconnect(ctx)
-	}()
+			defer func() {
+				_ = c.Disconnect(ctx)
+			}()
 
-	err = requiredVersion(ctx, c)
-	if err != nil {
-		return fmt.Errorf("required version check failed with error: %s", err)
-	}
+			err = requiredVersion(ctx, c)
+			if err != nil {
+				return fmt.Errorf("required version check failed with error: %s", err)
+			}
 
-	err = c.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{
-		{"replSetInitiate", plan},
-	}).Err()
-	if err != nil {
-		return fmt.Errorf("create replica set failed with error: %s", err)
-	}
+			err = c.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{
+				{"replSetInitiate", plan},
+			}).Err()
+			if err != nil {
+				return fmt.Errorf("create replica set failed with error: %s", err)
+			}
 
-	return r.waitForReplicaSetReady(ctx, plan.Name)
+			return r.waitForReplicaSetReady(ctx, plan.Name)
+		},
+		retry.Attempts(r.RetryAttempts),
+		retry.DelayType(retry.BackOffDelay),
+		retry.Delay(r.RetryDelay),
+		retry.Context(ctx),
+	)
+
+	return err
 }
 
 func (r *ResourceReplicaSet) Exists(ctx context.Context, state types.ReplicaSet) (bool, error) {
 	var rsc *types.ReplicaSetConfig
 
-	c, err := r.connect()
-	if err != nil {
-		return false, fmt.Errorf("connection to MongoDB failed with error: %s", err)
-	}
+	err := retry.Do(
+		func() error {
+			c, err := r.connect(ctx)
+			if err != nil {
+				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
+			}
 
-	defer func() {
-		_ = c.Disconnect(ctx)
-	}()
+			defer func() {
+				_ = c.Disconnect(ctx)
+			}()
 
-	err = requiredVersion(ctx, c)
-	if err != nil {
-		return false, fmt.Errorf("required version check failed with error: %s", err)
-	}
+			err = requiredVersion(ctx, c)
+			if err != nil {
+				return fmt.Errorf("required version check failed with error: %s", err)
+			}
 
-	rsc, err = getReplicaSetConfig(ctx, c)
-	if err != nil {
-		return false, fmt.Errorf("get replica set config failed with error: %s", err)
-	}
+			rsc, err = getReplicaSetConfig(ctx, c)
+			if err != nil {
+				return fmt.Errorf("get replica set config failed with error: %s", err)
+			}
 
-	return rsc.Config.Name == state.Name, nil
+			return nil
+		},
+		retry.Attempts(r.RetryAttempts),
+		retry.DelayType(retry.BackOffDelay),
+		retry.Delay(r.RetryDelay),
+		retry.Context(ctx),
+	)
+
+	return rsc.Config.Name == state.Name, err
 }
 
 func (r *ResourceReplicaSet) Update(ctx context.Context, state types.ReplicaSet) error {
-	c, err := r.connect()
-	if err != nil {
-		return fmt.Errorf("connection to MongoDB failed with error: %s", err)
-	}
+	err := retry.Do(
+		func() error {
+			c, err := r.connect(ctx)
+			if err != nil {
+				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
+			}
 
-	defer func() {
-		_ = c.Disconnect(ctx)
-	}()
+			defer func() {
+				_ = c.Disconnect(ctx)
+			}()
 
-	err = requiredVersion(ctx, c)
-	if err != nil {
-		return fmt.Errorf("required version check failed with error: %s", err)
-	}
+			err = requiredVersion(ctx, c)
+			if err != nil {
+				return fmt.Errorf("required version check failed with error: %s", err)
+			}
 
-	status, err := getReplicaSetStatus(ctx, c)
-	if err != nil {
-		return fmt.Errorf("get replica set status failed with error: %s", err)
-	}
+			status, err := getReplicaSetStatus(ctx, c)
+			if err != nil {
+				return fmt.Errorf("get replica set status failed with error: %s", err)
+			}
 
-	if !isReplicaSetReady(status, state.Name) {
-		return fmt.Errorf("replica set %s not ready or corrupted", state.Name)
-	}
+			if !isReplicaSetReady(status, state.Name) {
+				return fmt.Errorf("replica set %s not ready or corrupted", state.Name)
+			}
 
-	err = c.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{
-		{"replSetReconfig", state},
-	}).Err()
-	if err != nil {
-		return fmt.Errorf("updating replica set failed with error: %s", err)
-	}
+			err = c.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{
+				{"replSetReconfig", state},
+			}).Err()
+			if err != nil {
+				return fmt.Errorf("updating replica set failed with error: %s", err)
+			}
 
-	return r.waitForReplicaSetReady(ctx, state.Name)
+			return r.waitForReplicaSetReady(ctx, state.Name)
+		},
+		retry.Attempts(r.RetryAttempts),
+		retry.DelayType(retry.BackOffDelay),
+		retry.Delay(r.RetryDelay),
+		retry.Context(ctx),
+	)
+
+	return err
 }
 
 func (r *ResourceReplicaSet) ImportState(ctx context.Context, name string) (types.ReplicaSet, error) {
 	var rsc *types.ReplicaSetConfig
 
-	c, err := r.connect()
+	err := retry.Do(
+		func() error {
+			c, err := r.connect(ctx)
+			if err != nil {
+				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
+			}
+
+			defer func() {
+				_ = c.Disconnect(ctx)
+			}()
+
+			err = requiredVersion(ctx, c)
+			if err != nil {
+				return fmt.Errorf("required version check failed with error: %s", err)
+			}
+
+			rsc, err = getReplicaSetConfig(ctx, c)
+			if err != nil {
+				return fmt.Errorf("get replica set config failed with error: %s", err)
+			}
+
+			if rsc.Config.Name != name {
+				return retry.Unrecoverable(fmt.Errorf("replica set %s does not exist", name))
+			}
+
+			rsc.Config.RemoveDefaults()
+
+			return nil
+		},
+		retry.Attempts(r.RetryAttempts),
+		retry.DelayType(retry.BackOffDelay),
+		retry.Delay(r.RetryDelay),
+		retry.Context(ctx),
+	)
+
 	if err != nil {
-		return types.ReplicaSet{}, fmt.Errorf("connection to MongoDB failed with error: %s", err)
+		return types.ReplicaSet{}, err
 	}
-
-	defer func() {
-		_ = c.Disconnect(ctx)
-	}()
-
-	err = requiredVersion(ctx, c)
-	if err != nil {
-		return types.ReplicaSet{}, fmt.Errorf("required version check failed with error: %s", err)
-	}
-
-	rsc, err = getReplicaSetConfig(ctx, c)
-	if err != nil {
-		return types.ReplicaSet{}, fmt.Errorf("get replica set config failed with error: %s", err)
-	}
-
-	if rsc.Config.Name != name {
-		return types.ReplicaSet{}, fmt.Errorf("replica set %s does not exist", name)
-	}
-
-	rsc.Config.RemoveDefaults()
 
 	return rsc.Config, nil
 }
 
-func (r *ResourceReplicaSet) connect() (*mongo.Client, error) {
+func (r *ResourceReplicaSet) connect(ctx context.Context) (*mongo.Client, error) {
 	opts := options.Client().ApplyURI(r.Uri)
 
 	if opts.ReplicaSet == nil {
 		return nil, fmt.Errorf("you can't use direct connection when working with replica set")
 	}
 
-	return mongo.Connect(opts)
+	client, err := mongo.Connect(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		_ = client.Disconnect(ctx)
+		return nil, fmt.Errorf("failed to ping MongoDB: %s", err)
+	}
+
+	return client, nil
 }
 
-func (r *ResourceReplicaSet) directConnect() (*mongo.Client, error) {
+func (r *ResourceReplicaSet) directConnect(ctx context.Context) (*mongo.Client, error) {
 	opts := options.Client().ApplyURI(r.Uri)
 	opts.ReplicaSet = nil
 	opts.Hosts = []string{opts.Hosts[0]}
 	opts.SetDirect(true)
 
-	return mongo.Connect(opts)
+	client, err := mongo.Connect(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		_ = client.Disconnect(ctx)
+		return nil, fmt.Errorf("failed to ping MongoDB: %s", err)
+	}
+
+	return client, nil
 }
 
 func (r *ResourceReplicaSet) waitForReplicaSetReady(ctx context.Context, replicaSetName string) error {
@@ -162,7 +229,7 @@ func (r *ResourceReplicaSet) waitForReplicaSetReady(ctx context.Context, replica
 			var status *types.ReplicaSetStatus
 			var err error
 
-			client, err = r.connect()
+			client, err = r.connect(ctx)
 			if err != nil {
 				continue
 			}
