@@ -79,7 +79,11 @@ func (r *ResourceReplicaSet) Exists(ctx context.Context, state types.ReplicaSet)
 		retry.Context(ctx),
 	)
 
-	return rsc.Config.Name == state.Name, err
+	if err != nil {
+		return false, fmt.Errorf("failed to check if replica set exists: %s", err)
+	}
+
+	return rsc.Config.Name == state.Name, nil
 }
 
 func (r *ResourceReplicaSet) Update(ctx context.Context, state types.ReplicaSet) error {
