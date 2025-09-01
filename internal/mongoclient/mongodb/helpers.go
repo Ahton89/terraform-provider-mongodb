@@ -8,9 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"terraform-provider-mongodb/internal/mongoclient/types"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"terraform-provider-mongodb/internal/mongoclient/types"
 )
 
 /* DATABASES */
@@ -117,7 +118,30 @@ func getReplicaSetConfig(ctx context.Context, client *mongo.Client) (*types.Repl
 		return &rsc, fmt.Errorf("get replica set config failed with error: %s", err)
 	}
 
+	rsc.Config.ClearVersion()
+
 	return &rsc, nil
+}
+
+func getReplicaSetConfigVersion(ctx context.Context, client *mongo.Client) (int64, error) {
+	var result bson.M
+
+	err := client.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{
+		{Key: "replSetGetConfig", Value: 1},
+	}).Decode(&result)
+
+	if err != nil {
+		return 0, err
+	}
+
+	config := result["config"].(bson.M)
+	version := config["version"].(int64)
+
+	if version == 0 {
+		return 0, fmt.Errorf("something went wrong while getting replica set version. Either there is no field with key version or it is zero, which we don't expect")
+	}
+
+	return version, nil
 }
 
 // isReplicaSetReady checks if the replica set is ready and has a primary node.

@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"terraform-provider-mongodb/internal/mongoclient/types"
+
 	"github.com/avast/retry-go/v4"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
-	"terraform-provider-mongodb/internal/mongoclient/types"
 )
 
 func (r *ResourceDatabase) Create(ctx context.Context, plan types.Database) error {

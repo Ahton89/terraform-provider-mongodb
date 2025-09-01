@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"regexp"
 
+	"terraform-provider-mongodb/internal/mongoclient/interfaces"
+	"terraform-provider-mongodb/internal/mongoclient/types"
+	"terraform-provider-mongodb/internal/provider/modifier"
+
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
-	"terraform-provider-mongodb/internal/mongoclient/interfaces"
-	"terraform-provider-mongodb/internal/mongoclient/types"
-	"terraform-provider-mongodb/internal/provider/modifier"
 )
 
 var (
@@ -46,6 +47,10 @@ func (r *resourceReplicaSet) Schema(_ context.Context, _ resource.SchemaRequest,
 				PlanModifiers: []planmodifier.String{
 					modifier.ImmutableString(),
 				},
+			},
+			"version": schema.Int64Attribute{
+				Description: "The version of the replica set. Automatically incremented each time the configuration is changed.",
+				Optional:    true,
 			},
 			"members": schema.ListNestedAttribute{
 				Required: true,

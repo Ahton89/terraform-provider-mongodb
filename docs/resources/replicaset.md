@@ -30,6 +30,7 @@ description: |-
 
 - `protocol_version` (Number) The protocol version of the replica set.
 - `settings` (Attributes) The replica set settings. (see [below for nested schema](#nestedatt--settings))
+- `version` (Number) The version of the replica set. Automatically incremented each time the configuration is changed.
 - `write_concern_majority_journal_default` (Boolean) Whether to use majority write concern with journaling by default.
 
 <a id="nestedatt--members"></a>

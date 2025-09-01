@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"terraform-provider-mongodb/internal/mongoclient/interfaces"
+
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"terraform-provider-mongodb/internal/mongoclient/interfaces"
 )
 
 var (

@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"terraform-provider-mongodb/internal/mongoclient/types"
+
 	"github.com/avast/retry-go/v4"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
-	"terraform-provider-mongodb/internal/mongoclient/types"
 )
 
 func (d *DataSourceDatabase) Read(ctx context.Context) (types.Databases, error) {
@@ -54,7 +55,7 @@ func (d *DataSourceDatabase) Read(ctx context.Context) (types.Databases, error) 
 		retry.Delay(d.RetryDelay),
 		retry.Context(ctx),
 	)
-	
+
 	return ds, err
 }
 
