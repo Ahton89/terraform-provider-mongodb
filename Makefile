@@ -1,4 +1,4 @@
-VERSION := 0.2.8
+VERSION := 0.2.9
 LDFLAGS = "-X 'main.version=$(VERSION)'"
 APP_NAME = terraform-provider-mongodb
 OS ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')

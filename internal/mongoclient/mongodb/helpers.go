@@ -124,7 +124,13 @@ func getReplicaSetConfig(ctx context.Context, client *mongo.Client) (*types.Repl
 }
 
 func getReplicaSetConfigVersion(ctx context.Context, client *mongo.Client) (int64, error) {
-	var result bson.M
+	type resultType struct {
+		Config struct {
+			Version int64 `bson:"version"`
+		} `bson:"config"`
+	}
+
+	var result resultType
 
 	err := client.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{
 		{Key: "replSetGetConfig", Value: 1},
@@ -134,14 +140,11 @@ func getReplicaSetConfigVersion(ctx context.Context, client *mongo.Client) (int6
 		return 0, err
 	}
 
-	config := result["config"].(bson.M)
-	version := config["version"].(int64)
-
-	if version == 0 {
+	if result.Config.Version == 0 {
 		return 0, fmt.Errorf("something went wrong while getting replica set version. Either there is no field with key version or it is zero, which we don't expect")
 	}
 
-	return version, nil
+	return result.Config.Version, nil
 }
 
 // isReplicaSetReady checks if the replica set is ready and has a primary node.
