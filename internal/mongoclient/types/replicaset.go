@@ -9,6 +9,7 @@ type ReplicaSetConfig struct {
 }
 type ReplicaSet struct {
 	Name                               string    `tfsdk:"name" bson:"_id"`
+	Version                            *int64    `tfsdk:"version" bson:"version,omitempty"`
 	Members                            []Member  `tfsdk:"members" bson:"members"`
 	ProtocolVersion                    *int64    `tfsdk:"protocol_version" bson:"protocolVersion,omitempty"`
 	WriteConcernMajorityJournalDefault *bool     `tfsdk:"write_concern_majority_journal_default" bson:"writeConcernMajorityJournalDefault,omitempty"`
@@ -41,7 +42,17 @@ type GetLastErrorDefaults struct {
 	WTimeout int64 `tfsdk:"wtimeout" bson:"wtimeout,omitempty"`
 }
 
+func (r *ReplicaSet) SetVersion(newVersion *int64) {
+	r.Version = newVersion
+}
+
+func (r *ReplicaSet) ClearVersion() {
+	r.Version = nil
+}
+
 func (r *ReplicaSet) RemoveDefaults() {
+	r.ClearVersion()
+
 	if r.Settings != nil {
 		if r.Settings.ChainingAllowed == true &&
 			r.Settings.HeartbeatIntervalMillis == 2000 &&
@@ -55,6 +66,7 @@ func (r *ReplicaSet) RemoveDefaults() {
 			r.Settings = nil
 		}
 	}
+
 	if r.ProtocolVersion != nil && *r.ProtocolVersion == 1 {
 		r.ProtocolVersion = nil
 	}

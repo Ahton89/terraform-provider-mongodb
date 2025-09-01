@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	"terraform-provider-mongodb/internal/mongoclient/types"
+
 	"github.com/avast/retry-go/v4"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
-	"terraform-provider-mongodb/internal/mongoclient/types"
 )
 
 func (r *ResourceReplicaSet) Create(ctx context.Context, plan types.ReplicaSet) error {
@@ -112,12 +113,26 @@ func (r *ResourceReplicaSet) Update(ctx context.Context, state types.ReplicaSet)
 				return fmt.Errorf("replica set %s not ready or corrupted", state.Name)
 			}
 
+			// Get current config version and increment it
+			version, err := getReplicaSetConfigVersion(ctx, c)
+			if err != nil {
+				return fmt.Errorf("get replica set config version failed with error: %s", err)
+			}
+
+			version++
+
+			// Set the new version to the config
+			state.SetVersion(&version)
+
 			err = c.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{
 				{"replSetReconfig", state},
 			}).Err()
 			if err != nil {
 				return fmt.Errorf("updating replica set failed with error: %s", err)
 			}
+
+			// Clear version in state
+			state.ClearVersion()
 
 			return r.waitForReplicaSetReady(ctx, state.Name)
 		},

@@ -7,8 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"terraform-provider-mongodb/internal/provider"
+
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
 
 var (
