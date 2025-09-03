@@ -35,9 +35,10 @@ type mongoDBProvider struct {
 }
 
 type mongodb struct {
-	ConnectionString types.String `tfsdk:"connection_string"`
-	RetryAttempts    types.Int32  `tfsdk:"retry_attempts"`
-	RetryDelaySec    types.Int32  `tfsdk:"retry_delay_sec"`
+	ConnectionString         types.String `tfsdk:"connection_string"`
+	RetryAttempts            types.Int32  `tfsdk:"retry_attempts"`
+	RetryDelaySec            types.Int32  `tfsdk:"retry_delay_sec"`
+	ReplicaSetPollingTimeout types.Int32  `tfsdk:"replicaset_polling_timeout"`
 }
 
 func (m *mongoDBProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -77,6 +78,13 @@ func (m *mongoDBProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 					int32validator.AtLeast(1),
 				},
 			},
+			"replicaset_polling_timeout": schema.Int32Attribute{
+				Optional:    true,
+				Description: "The timeout in minutes for replica set polling. Default is 10 minutes.",
+				Validators: []validator.Int32{
+					int32validator.AtLeast(1),
+				},
+			},
 		},
 	}
 }
@@ -93,6 +101,7 @@ func (m *mongoDBProvider) Configure(ctx context.Context, req provider.ConfigureR
 		config.ConnectionString.ValueString(),
 		uint(config.RetryAttempts.ValueInt32()),
 		uint(config.RetryDelaySec.ValueInt32()),
+		config.ReplicaSetPollingTimeout.ValueInt32(),
 	)
 
 	resp.DataSourceData = client

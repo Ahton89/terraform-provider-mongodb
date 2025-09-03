@@ -235,6 +235,9 @@ func (r *ResourceReplicaSet) waitForReplicaSetReady(ctx context.Context, replica
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
+	ctx, cancel := context.WithTimeout(ctx, r.PollingTimeout)
+	defer cancel()
+
 	for {
 		select {
 		case <-ctx.Done():

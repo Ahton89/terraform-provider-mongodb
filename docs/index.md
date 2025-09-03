@@ -21,5 +21,6 @@ description: |-
 
 ### Optional
 
+- `replicaset_polling_timeout` (Number) The timeout in minutes for replica set polling. Default is 10 minutes.
 - `retry_attempts` (Number) The number of retry attempts for operations that fail due to transient errors.
 - `retry_delay_sec` (Number) The delay in seconds between retry attempts.

@@ -67,9 +67,10 @@ func (d *DataSource) ReplicaSet() interfaces.DataSourceReplicaSet {
 /* RESOURCE */
 
 type Resource struct {
-	Uri           string
-	RetryAttempts uint
-	RetryDelay    time.Duration
+	Uri                      string
+	RetryAttempts            uint
+	RetryDelay               time.Duration
+	ReplicaSetPollingTimeout time.Duration
 }
 
 type ResourceDatabase struct {
@@ -85,9 +86,10 @@ type ResourceUser struct {
 }
 
 type ResourceReplicaSet struct {
-	Uri           string
-	RetryAttempts uint
-	RetryDelay    time.Duration
+	Uri            string
+	RetryAttempts  uint
+	RetryDelay     time.Duration
+	PollingTimeout time.Duration
 }
 
 func (r *Resource) Resource() interfaces.Resource {
@@ -116,8 +118,9 @@ func (r *Resource) Database() interfaces.ResourceDatabase {
 
 func (r *Resource) ReplicaSet() interfaces.ResourceReplicaSet {
 	return &ResourceReplicaSet{
-		Uri:           r.Uri,
-		RetryAttempts: r.RetryAttempts,
-		RetryDelay:    r.RetryDelay,
+		Uri:            r.Uri,
+		RetryAttempts:  r.RetryAttempts,
+		RetryDelay:     r.RetryDelay,
+		PollingTimeout: r.ReplicaSetPollingTimeout,
 	}
 }
