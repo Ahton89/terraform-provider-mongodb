@@ -3,12 +3,14 @@ package provider
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"regexp"
 
 	"terraform-provider-mongodb/internal/mongoclient/interfaces"
 	"terraform-provider-mongodb/internal/mongoclient/types"
 	"terraform-provider-mongodb/internal/provider/modifier"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -34,7 +36,7 @@ func (r *resourceReplicaSet) Metadata(_ context.Context, req resource.MetadataRe
 	resp.TypeName = req.ProviderTypeName + "_replicaset"
 }
 
-func (r *resourceReplicaSet) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *resourceReplicaSet) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "> **IMPORTANT: Updating members in a replica set can currently only add/change\n" +
 			"> members one at a time. This functionality will be improved, but to avoid errors - add/change\n" +
@@ -149,6 +151,11 @@ func (r *resourceReplicaSet) Schema(_ context.Context, _ resource.SchemaRequest,
 					},
 				},
 			},
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+				Create: true,
+				Read:   true,
+				Update: true,
+			}),
 		},
 	}
 }
@@ -156,43 +163,48 @@ func (r *resourceReplicaSet) Schema(_ context.Context, _ resource.SchemaRequest,
 func (r *resourceReplicaSet) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	plan := types.ReplicaSet{}
 
-	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	err := r.client.Resource().ReplicaSet().Create(ctx, plan)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to create replica set",
-			err.Error(),
-		)
+	apiCtx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
+
+	if err := r.client.Resource().ReplicaSet().Create(apiCtx, plan); err != nil {
+		resp.Diagnostics.AddError("Failed to create replica set", err.Error())
 		return
 	}
 
-	diags = resp.State.Set(ctx, plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
 func (r *resourceReplicaSet) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	state := types.ReplicaSet{}
 
-	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	exist, err := r.client.Resource().ReplicaSet().Exists(ctx, state)
+	apiCtx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
+	exist, err := r.client.Resource().ReplicaSet().Exists(apiCtx, state)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to check replica set existence",
-			err.Error(),
-		)
+		resp.Diagnostics.AddError("Failed to check replica set existence", err.Error())
 		return
 	}
 
@@ -201,36 +213,39 @@ func (r *resourceReplicaSet) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	diags = resp.State.Set(ctx, state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 func (r *resourceReplicaSet) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	plan := types.ReplicaSet{}
+	state := types.ReplicaSet{}
 
-	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if r.onlyTimeoutsChanged(plan, state) {
+		resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+		return
+	}
+
+	updateTimeout, diags := plan.Timeouts.Update(ctx, defaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	err := r.client.Resource().ReplicaSet().Update(ctx, plan)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to update replica set",
-			err.Error(),
-		)
+	apiCtx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
+
+	if err := r.client.Resource().ReplicaSet().Update(apiCtx, plan); err != nil {
+		resp.Diagnostics.AddError("Failed to update replica set", err.Error())
 		return
 	}
 
-	diags = resp.State.Set(ctx, plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
 func (r *resourceReplicaSet) Delete(_ context.Context, _ resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -245,18 +260,11 @@ func (r *resourceReplicaSet) ImportState(ctx context.Context, req resource.Impor
 
 	state, err := r.client.Resource().ReplicaSet().ImportState(ctx, name)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to import replica set",
-			err.Error(),
-		)
+		resp.Diagnostics.AddError("Failed to import replica set", err.Error())
 		return
 	}
 
-	diags := resp.State.Set(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (r *resourceReplicaSet) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -275,4 +283,14 @@ func (r *resourceReplicaSet) Configure(_ context.Context, req resource.Configure
 	}
 
 	r.client = client
+}
+
+func (r *resourceReplicaSet) onlyTimeoutsChanged(plan, state types.ReplicaSet) bool {
+	cpPlan := plan
+	cpState := state
+
+	cpPlan.Timeouts = timeouts.Value{}
+	cpState.Timeouts = timeouts.Value{}
+
+	return reflect.DeepEqual(cpPlan, cpState)
 }

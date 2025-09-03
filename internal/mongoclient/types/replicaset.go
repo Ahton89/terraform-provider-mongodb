@@ -1,5 +1,7 @@
 package types
 
+import "github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+
 const (
 	MongoDBRequiredVersion = "6"
 )
@@ -8,12 +10,13 @@ type ReplicaSetConfig struct {
 	Config ReplicaSet `bson:"config"`
 }
 type ReplicaSet struct {
-	Name                               string    `tfsdk:"name" bson:"_id"`
-	Version                            *int64    `tfsdk:"version" bson:"version,omitempty"`
-	Members                            []Member  `tfsdk:"members" bson:"members"`
-	ProtocolVersion                    *int64    `tfsdk:"protocol_version" bson:"protocolVersion,omitempty"`
-	WriteConcernMajorityJournalDefault *bool     `tfsdk:"write_concern_majority_journal_default" bson:"writeConcernMajorityJournalDefault,omitempty"`
-	Settings                           *Settings `tfsdk:"settings" bson:"settings,omitempty"`
+	Name                               string         `tfsdk:"name" bson:"_id"`
+	Version                            *int64         `tfsdk:"version" bson:"version,omitempty"`
+	Members                            []Member       `tfsdk:"members" bson:"members"`
+	ProtocolVersion                    *int64         `tfsdk:"protocol_version" bson:"protocolVersion,omitempty"`
+	WriteConcernMajorityJournalDefault *bool          `tfsdk:"write_concern_majority_journal_default" bson:"writeConcernMajorityJournalDefault,omitempty"`
+	Settings                           *Settings      `tfsdk:"settings" bson:"settings,omitempty"`
+	Timeouts                           timeouts.Value `tfsdk:"timeouts" bson:"-"`
 }
 
 type Member struct {

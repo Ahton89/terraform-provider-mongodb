@@ -2,7 +2,7 @@ terraform {
   required_providers {
     mongodb = {
       source = "registry.terraform.io/Ahton89/mongodb"
-      version = "= 0.2.9"
+      version = "= 0.2.10"
     }
   }
 }
@@ -56,4 +56,11 @@ resource "mongodb_user" "user" {
       role = role.role
     }
   ]
+
+  timeouts = {
+    create = "5m"
+    read   = "2m"
+    update = "5m"
+    delete = "5m"
+  }
 }

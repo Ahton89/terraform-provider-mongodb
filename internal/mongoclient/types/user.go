@@ -1,5 +1,7 @@
 package types
 
+import "github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+
 var (
 	DefaultUsers = []string{"admin"} // Default users to exclude from listing
 )
@@ -11,9 +13,10 @@ type Users struct {
 }
 
 type User struct {
-	Username string `tfsdk:"username" bson:"user"`
-	Password string `tfsdk:"password" bson:"password,omitempty"`
-	Roles    []Role `tfsdk:"roles" bson:"roles"`
+	Username string         `tfsdk:"username" bson:"user"`
+	Password string         `tfsdk:"password" bson:"password,omitempty"`
+	Roles    []Role         `tfsdk:"roles" bson:"roles"`
+	Timeouts timeouts.Value `tfsdk:"timeouts" bson:"-"`
 }
 
 type Role struct {

@@ -3,12 +3,16 @@
 page_title: "mongodb Provider"
 subcategory: ""
 description: |-
-  **IMPORTANT: This provider supports only MongoDB v6**
+  **IMPORTANT:** This provider supports only MongoDB v6  
+  **DEFAULT TIMEOUT:** 15 minutes for all resource operations (create, read, update, delete)  
+  You can override the default timeout by setting the "timeouts" block in each resource.
 ---
 
 # mongodb Provider
 
-> **IMPORTANT: This provider supports only MongoDB v6**
+> **IMPORTANT:** This provider supports only MongoDB v6  
+> **DEFAULT TIMEOUT:** 15 minutes for all resource operations (create, read, update, delete)  
+> You can override the default timeout by setting the "timeouts" block in each resource.
 
 
 
@@ -21,5 +25,6 @@ description: |-
 
 ### Optional
 
+- `default_timeout` (Number) The default timeout in minutes for all resource operations (create, read, update, delete). Current is 15 minutes.
 - `retry_attempts` (Number) The number of retry attempts for operations that fail due to transient errors.
 - `retry_delay_sec` (Number) The delay in seconds between retry attempts.

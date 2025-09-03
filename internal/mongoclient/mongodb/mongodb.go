@@ -6,6 +6,11 @@ import (
 	"terraform-provider-mongodb/internal/mongoclient/interfaces"
 )
 
+var (
+	defaultContextTimeout     = 1 * time.Second
+	replicaSetPollingInterval = 5 * time.Second
+)
+
 /* DATA SOURCE */
 
 type DataSource struct {

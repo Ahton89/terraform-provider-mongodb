@@ -7,6 +7,7 @@ import (
 	"terraform-provider-mongodb/internal/mongoclient/interfaces"
 	"terraform-provider-mongodb/internal/mongoclient/types"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -31,7 +32,7 @@ func (r *resourceDatabase) Metadata(_ context.Context, req resource.MetadataRequ
 	resp.TypeName = req.ProviderTypeName + "_database"
 }
 
-func (r *resourceDatabase) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *resourceDatabase) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
@@ -41,6 +42,11 @@ func (r *resourceDatabase) Schema(_ context.Context, _ resource.SchemaRequest, r
 				},
 				Description: "Database name to create.",
 			},
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+				Create: true,
+				Read:   true,
+				Delete: true,
+			}),
 		},
 	}
 }
@@ -48,43 +54,49 @@ func (r *resourceDatabase) Schema(_ context.Context, _ resource.SchemaRequest, r
 func (r *resourceDatabase) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	plan := types.Database{}
 
-	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	err := r.client.Resource().Database().Create(ctx, plan)
+	apiCtx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
+
+	err := r.client.Resource().Database().Create(apiCtx, plan)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to create database",
-			err.Error(),
-		)
+		resp.Diagnostics.AddError("Failed to create database", err.Error())
 		return
 	}
 
-	diags = resp.State.Set(ctx, plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
 func (r *resourceDatabase) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	state := types.Database{}
 
-	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	exist, err := r.client.Resource().Database().Exists(ctx, state)
+	apiCtx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
+	exist, err := r.client.Resource().Database().Exists(apiCtx, state)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to check database existence",
-			err.Error(),
-		)
+		resp.Diagnostics.AddError("Failed to check database existence", err.Error())
 		return
 	}
 
@@ -93,11 +105,7 @@ func (r *resourceDatabase) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	diags = resp.State.Set(ctx, state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 func (r *resourceDatabase) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -110,18 +118,23 @@ func (r *resourceDatabase) Update(_ context.Context, _ resource.UpdateRequest, r
 func (r *resourceDatabase) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	state := types.Database{}
 
-	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	err := r.client.Resource().Database().Delete(ctx, state)
+	apiCtx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
+
+	err := r.client.Resource().Database().Delete(apiCtx, state)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to delete database",
-			err.Error(),
-		)
+		resp.Diagnostics.AddError("Failed to delete database", err.Error())
 		return
 	}
 }
@@ -131,18 +144,11 @@ func (r *resourceDatabase) ImportState(ctx context.Context, req resource.ImportS
 
 	state, err := r.client.Resource().Database().ImportState(ctx, database)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to import database",
-			err.Error(),
-		)
+		resp.Diagnostics.AddError("Failed to import database", err.Error())
 		return
 	}
 
-	diags := resp.State.Set(ctx, state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 func (r *resourceDatabase) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {

@@ -25,7 +25,9 @@ func (r *ResourceUser) Create(ctx context.Context, plan types.User) error {
 			}
 
 			defer func() {
-				_ = c.Disconnect(ctx)
+				disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+				_ = c.Disconnect(disconnectCtx)
+				cancel()
 			}()
 
 			exist, err := userExists(ctx, c, plan.Username)
@@ -75,7 +77,9 @@ func (r *ResourceUser) Exists(ctx context.Context, state types.User) (bool, erro
 			}
 
 			defer func() {
-				_ = c.Disconnect(ctx)
+				disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+				_ = c.Disconnect(disconnectCtx)
+				cancel()
 			}()
 
 			exist, err = userExists(ctx, c, state.Username)
@@ -104,7 +108,9 @@ func (r *ResourceUser) Delete(ctx context.Context, state types.User) error {
 			}
 
 			defer func() {
-				_ = c.Disconnect(ctx)
+				disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+				_ = c.Disconnect(disconnectCtx)
+				cancel()
 			}()
 
 			exist, err := userExists(ctx, c, state.Username)
@@ -142,7 +148,9 @@ func (r *ResourceUser) Update(ctx context.Context, plan types.User) error {
 			}
 
 			defer func() {
-				_ = c.Disconnect(ctx)
+				disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+				_ = c.Disconnect(disconnectCtx)
+				cancel()
 			}()
 
 			exist, err := userExists(ctx, c, plan.Username)
@@ -194,7 +202,9 @@ func (r *ResourceUser) ImportState(ctx context.Context, username string) (types.
 			}
 
 			defer func() {
-				_ = c.Disconnect(ctx)
+				disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+				_ = c.Disconnect(disconnectCtx)
+				cancel()
 			}()
 
 			users, err := listUsers(ctx, c)
@@ -246,7 +256,10 @@ func (r *ResourceUser) connect(ctx context.Context) (*mongo.Client, error) {
 
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		_ = client.Disconnect(ctx)
+		disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+		_ = client.Disconnect(disconnectCtx)
+		cancel()
+
 		return nil, fmt.Errorf("failed to ping MongoDB: %s", err)
 	}
 

@@ -22,7 +22,9 @@ func (r *ResourceReplicaSet) Create(ctx context.Context, plan types.ReplicaSet) 
 			}
 
 			defer func() {
-				_ = c.Disconnect(ctx)
+				disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+				_ = c.Disconnect(disconnectCtx)
+				cancel()
 			}()
 
 			err = requiredVersion(ctx, c)
@@ -59,7 +61,9 @@ func (r *ResourceReplicaSet) Exists(ctx context.Context, state types.ReplicaSet)
 			}
 
 			defer func() {
-				_ = c.Disconnect(ctx)
+				disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+				_ = c.Disconnect(disconnectCtx)
+				cancel()
 			}()
 
 			err = requiredVersion(ctx, c)
@@ -96,7 +100,9 @@ func (r *ResourceReplicaSet) Update(ctx context.Context, state types.ReplicaSet)
 			}
 
 			defer func() {
-				_ = c.Disconnect(ctx)
+				disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+				_ = c.Disconnect(disconnectCtx)
+				cancel()
 			}()
 
 			err = requiredVersion(ctx, c)
@@ -156,7 +162,9 @@ func (r *ResourceReplicaSet) ImportState(ctx context.Context, name string) (type
 			}
 
 			defer func() {
-				_ = c.Disconnect(ctx)
+				disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+				_ = c.Disconnect(disconnectCtx)
+				cancel()
 			}()
 
 			err = requiredVersion(ctx, c)
@@ -204,7 +212,10 @@ func (r *ResourceReplicaSet) connect(ctx context.Context) (*mongo.Client, error)
 
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		_ = client.Disconnect(ctx)
+		disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+		_ = client.Disconnect(disconnectCtx)
+		cancel()
+
 		return nil, fmt.Errorf("failed to ping MongoDB: %s", err)
 	}
 
@@ -224,7 +235,10 @@ func (r *ResourceReplicaSet) directConnect(ctx context.Context) (*mongo.Client, 
 
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		_ = client.Disconnect(ctx)
+		disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+		_ = client.Disconnect(disconnectCtx)
+		cancel()
+
 		return nil, fmt.Errorf("failed to ping MongoDB: %s", err)
 	}
 
@@ -232,7 +246,7 @@ func (r *ResourceReplicaSet) directConnect(ctx context.Context) (*mongo.Client, 
 }
 
 func (r *ResourceReplicaSet) waitForReplicaSetReady(ctx context.Context, replicaSetName string) error {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(replicaSetPollingInterval)
 	defer ticker.Stop()
 
 	for {
@@ -254,7 +268,11 @@ func (r *ResourceReplicaSet) waitForReplicaSetReady(ctx context.Context, replica
 			}
 
 			status, err = getReplicaSetStatus(ctx, client)
-			_ = client.Disconnect(ctx)
+
+			disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+			_ = client.Disconnect(disconnectCtx)
+			cancel()
+
 			if err == nil && isReplicaSetReady(status, replicaSetName) {
 				return nil
 			}

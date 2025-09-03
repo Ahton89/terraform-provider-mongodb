@@ -2,7 +2,7 @@ terraform {
   required_providers {
     mongodb = {
       source = "registry.terraform.io/Ahton89/mongodb"
-      version = "= 0.2.9"
+      version = "= 0.2.10"
     }
   }
 }
@@ -32,4 +32,10 @@ locals {
 resource "mongodb_replicaset" "example" {
   name = local.replicaset_name
   members = local.members
+
+  timeouts = {
+    create = "5m"
+    read   = "2m"
+    update = "5m"
+  }
 }

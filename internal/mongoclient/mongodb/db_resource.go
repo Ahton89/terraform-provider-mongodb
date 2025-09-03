@@ -24,7 +24,9 @@ func (r *ResourceDatabase) Create(ctx context.Context, plan types.Database) erro
 			}
 
 			defer func() {
-				_ = c.Disconnect(ctx)
+				disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+				_ = c.Disconnect(disconnectCtx)
+				cancel()
 			}()
 
 			exist, err := databaseExists(ctx, c, plan.Name)
@@ -58,7 +60,9 @@ func (r *ResourceDatabase) Exists(ctx context.Context, state types.Database) (bo
 			}
 
 			defer func() {
-				_ = c.Disconnect(ctx)
+				disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+				_ = c.Disconnect(disconnectCtx)
+				cancel()
 			}()
 
 			exist, err = databaseExists(ctx, c, state.Name)
@@ -83,7 +87,9 @@ func (r *ResourceDatabase) Delete(ctx context.Context, state types.Database) err
 			}
 
 			defer func() {
-				_ = c.Disconnect(ctx)
+				disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+				_ = c.Disconnect(disconnectCtx)
+				cancel()
 			}()
 
 			exist, err := databaseExists(ctx, c, state.Name)
@@ -119,7 +125,9 @@ func (r *ResourceDatabase) ImportState(ctx context.Context, name string) (types.
 			}
 
 			defer func() {
-				_ = c.Disconnect(ctx)
+				disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+				_ = c.Disconnect(disconnectCtx)
+				cancel()
 			}()
 
 			exist, err := databaseExists(ctx, c, name)
@@ -152,7 +160,10 @@ func (r *ResourceDatabase) connect(ctx context.Context) (*mongo.Client, error) {
 
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		_ = client.Disconnect(ctx)
+		disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+		_ = client.Disconnect(disconnectCtx)
+		cancel()
+
 		return nil, fmt.Errorf("failed to ping MongoDB: %s", err)
 	}
 

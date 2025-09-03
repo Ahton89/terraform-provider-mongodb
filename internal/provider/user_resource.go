@@ -3,10 +3,12 @@ package provider
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"terraform-provider-mongodb/internal/mongoclient/interfaces"
 	"terraform-provider-mongodb/internal/mongoclient/types"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -31,7 +33,7 @@ func (r *resourceUser) Metadata(_ context.Context, req resource.MetadataRequest,
 	resp.TypeName = req.ProviderTypeName + "_user"
 }
 
-func (r *resourceUser) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *resourceUser) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"username": schema.StringAttribute{
@@ -61,6 +63,12 @@ func (r *resourceUser) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 					},
 				},
 			},
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+				Create: true,
+				Read:   true,
+				Update: true,
+				Delete: true,
+			}),
 		},
 	}
 }
@@ -68,43 +76,49 @@ func (r *resourceUser) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 func (r *resourceUser) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	plan := types.User{}
 
-	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	err := r.client.Resource().User().Create(ctx, plan)
+	apiCtx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
+
+	err := r.client.Resource().User().Create(apiCtx, plan)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to create user",
-			err.Error(),
-		)
+		resp.Diagnostics.AddError("Failed to create user", err.Error())
 		return
 	}
 
-	diags = resp.State.Set(ctx, plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
 func (r *resourceUser) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	state := types.User{}
 
-	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	exist, err := r.client.Resource().User().Exists(ctx, state)
+	apiCtx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
+	exist, err := r.client.Resource().User().Exists(apiCtx, state)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to check user existence",
-			err.Error(),
-		)
+		resp.Diagnostics.AddError("Failed to check user existence", err.Error())
 		return
 	}
 
@@ -113,53 +127,62 @@ func (r *resourceUser) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	diags = resp.State.Set(ctx, state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 func (r *resourceUser) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	plan := types.User{}
+	state := types.User{}
 
-	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if r.onlyTimeoutsChanged(plan, state) {
+		resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+		return
+	}
+
+	updateTimeout, diags := plan.Timeouts.Update(ctx, defaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	err := r.client.Resource().User().Update(ctx, plan)
+	apiCtx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
+
+	err := r.client.Resource().User().Update(apiCtx, plan)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to update user",
-			err.Error(),
-		)
+		resp.Diagnostics.AddError("Failed to update user", err.Error())
 		return
 	}
 
-	diags = resp.State.Set(ctx, plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
 func (r *resourceUser) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	state := types.User{}
 
-	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	err := r.client.Resource().User().Delete(ctx, state)
+	apiCtx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
+
+	err := r.client.Resource().User().Delete(apiCtx, state)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to delete user",
-			err.Error(),
-		)
+		resp.Diagnostics.AddError("Failed to delete user", err.Error())
 		return
 	}
 }
@@ -169,18 +192,11 @@ func (r *resourceUser) ImportState(ctx context.Context, req resource.ImportState
 
 	state, err := r.client.Resource().User().ImportState(ctx, username)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to import user state",
-			err.Error(),
-		)
+		resp.Diagnostics.AddError("Failed to import user state", err.Error())
 		return
 	}
 
-	diags := resp.State.Set(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (r *resourceUser) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -199,4 +215,14 @@ func (r *resourceUser) Configure(_ context.Context, req resource.ConfigureReques
 	}
 
 	r.client = client
+}
+
+func (r *resourceUser) onlyTimeoutsChanged(plan, state types.User) bool {
+	cpPlan := plan
+	cpState := state
+
+	cpPlan.Timeouts = timeouts.Value{}
+	cpState.Timeouts = timeouts.Value{}
+
+	return reflect.DeepEqual(cpPlan, cpState)
 }
