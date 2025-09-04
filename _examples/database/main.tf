@@ -2,7 +2,7 @@ terraform {
   required_providers {
     mongodb = {
       source = "registry.terraform.io/Ahton89/mongodb"
-      version = "= 0.2.9"
+      version = "= 0.2.10"
     }
   }
 }
@@ -26,4 +26,10 @@ resource "mongodb_database" "database" {
   for_each = { for database in local.databases : database.name => database }
 
   name = each.value.name
+
+  timeouts = {
+    create = "5m"
+    read   = "2m"
+    delete = "5m"
+  }
 }

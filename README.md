@@ -67,9 +67,34 @@ The provider supports importing existing resources. The import command is as fol
   terraform import 'mongodb_database.database["example_database_1"]' example_database_1
 ```
 
+## Timeouts
+The provider supports timeouts for create, read, update and delete operations `only for resources`. The default timeout is 15 minutes. You can customize the timeout for each resource as follows:
+```hcl
+resource "mongodb_user" "user" {
+  for_each = { for user in local.users : user.username => user }
+
+  username = each.value.username
+  password = each.value.password
+
+  roles = [
+    for role in each.value.roles : {
+      database = role.database
+      role = role.role
+    }
+  ]
+
+  timeouts = {
+    create = "5m"
+    read   = "2m"
+    update = "5m"
+    delete = "5m"
+  }
+}
+```
+
 ## Requirements
 -	[Terraform](https://www.terraform.io/downloads.html) 1.6.3+ (everything was tested on this version)
--	[Go](https://golang.org/doc/install) 1.23.4 (to build the provider plugin)
+-	[Go](https://golang.org/doc/install) 1.24+ (to build the provider plugin)
 
 
 ## Contributing to the provider

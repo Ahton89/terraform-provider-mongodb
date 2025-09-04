@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"time"
 
 	"terraform-provider-mongodb/internal/mongoclient"
 	mongoclientTypes "terraform-provider-mongodb/internal/mongoclient/types"
@@ -19,7 +20,8 @@ import (
 )
 
 var (
-	_ provider.Provider = &mongoDBProvider{}
+	_              provider.Provider = &mongoDBProvider{}
+	defaultTimeout                   = 15 * time.Minute
 )
 
 func New(version string) func() provider.Provider {
@@ -38,6 +40,7 @@ type mongodb struct {
 	ConnectionString types.String `tfsdk:"connection_string"`
 	RetryAttempts    types.Int32  `tfsdk:"retry_attempts"`
 	RetryDelaySec    types.Int32  `tfsdk:"retry_delay_sec"`
+	DefaultTimeout   types.Int32  `tfsdk:"default_timeout"`
 }
 
 func (m *mongoDBProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -47,8 +50,12 @@ func (m *mongoDBProvider) Metadata(_ context.Context, _ provider.MetadataRequest
 
 func (m *mongoDBProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: fmt.Sprintf(
-			"> **IMPORTANT: This provider supports only MongoDB v%s**", mongoclientTypes.MongoDBRequiredVersion,
+		MarkdownDescription: fmt.Sprintf(`
+> **IMPORTANT:** This provider supports only MongoDB v%s  
+> **DEFAULT TIMEOUT:** %0.f minutes for all resource operations (create, read, update, delete)  
+> You can override the default timeout by setting the "timeouts" block in each resource.`,
+			mongoclientTypes.MongoDBRequiredVersion,
+			defaultTimeout.Minutes(),
 		),
 		Attributes: map[string]schema.Attribute{
 			"connection_string": schema.StringAttribute{
@@ -77,6 +84,14 @@ func (m *mongoDBProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 					int32validator.AtLeast(1),
 				},
 			},
+			"default_timeout": schema.Int32Attribute{
+				Optional: true,
+				Description: "The default timeout in minutes for all resource operations (create, read, update, delete)." +
+					" Current is 15 minutes.",
+				Validators: []validator.Int32{
+					int32validator.AtLeast(1),
+				},
+			},
 		},
 	}
 }
@@ -87,6 +102,10 @@ func (m *mongoDBProvider) Configure(ctx context.Context, req provider.ConfigureR
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	if config.DefaultTimeout.ValueInt32() > 0 {
+		defaultTimeout = time.Duration(config.DefaultTimeout.ValueInt32()) * time.Minute
 	}
 
 	client := mongoclient.New(

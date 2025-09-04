@@ -48,19 +48,11 @@ func (d *dataSourceDatabases) Schema(_ context.Context, _ datasource.SchemaReque
 func (d *dataSourceDatabases) Read(ctx context.Context, _ datasource.ReadRequest, resp *datasource.ReadResponse) {
 	state, err := d.client.DataSource().Database().Read(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to read databases",
-			err.Error(),
-		)
-
+		resp.Diagnostics.AddError("Failed to read databases", err.Error())
 		return
 	}
 
-	diags := resp.State.Set(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (d *dataSourceDatabases) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {

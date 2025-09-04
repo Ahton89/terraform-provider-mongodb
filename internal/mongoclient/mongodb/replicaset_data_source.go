@@ -22,7 +22,9 @@ func (d *DataSourceReplicaSet) Read(ctx context.Context) (types.ReplicaSet, erro
 			}
 
 			defer func() {
-				_ = c.Disconnect(ctx)
+				disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+				_ = c.Disconnect(disconnectCtx)
+				cancel()
 			}()
 
 			err = requiredVersion(ctx, c)
@@ -60,7 +62,10 @@ func (d *DataSourceReplicaSet) connect(ctx context.Context) (*mongo.Client, erro
 
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		_ = client.Disconnect(ctx)
+		disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+		_ = client.Disconnect(disconnectCtx)
+		cancel()
+
 		return nil, fmt.Errorf("failed to ping MongoDB: %s", err)
 	}
 

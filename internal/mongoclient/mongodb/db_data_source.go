@@ -23,7 +23,9 @@ func (d *DataSourceDatabase) Read(ctx context.Context) (types.Databases, error) 
 			}
 
 			defer func() {
-				_ = c.Disconnect(ctx)
+				disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+				_ = c.Disconnect(disconnectCtx)
+				cancel()
 			}()
 
 			list, err := c.ListDatabaseNames(
@@ -69,7 +71,10 @@ func (d *DataSourceDatabase) connect(ctx context.Context) (*mongo.Client, error)
 
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		_ = client.Disconnect(ctx)
+		disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
+		_ = client.Disconnect(disconnectCtx)
+		cancel()
+
 		return nil, fmt.Errorf("failed to ping MongoDB: %s", err)
 	}
 
