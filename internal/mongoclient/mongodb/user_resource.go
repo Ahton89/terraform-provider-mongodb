@@ -231,6 +231,8 @@ func (r *ResourceUser) ImportState(ctx context.Context, username string) (types.
 				Roles:    roles,
 			}
 
+			u.ClearTimeouts()
+
 			return nil
 		},
 		retry.Attempts(r.RetryAttempts),

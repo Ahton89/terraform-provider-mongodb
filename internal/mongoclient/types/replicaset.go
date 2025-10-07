@@ -1,6 +1,10 @@
 package types
 
-import "github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
 
 const (
 	MongoDBRequiredVersion = "6"
@@ -51,6 +55,18 @@ func (r *ReplicaSet) SetVersion(newVersion *int64) {
 
 func (r *ReplicaSet) ClearVersion() {
 	r.Version = nil
+}
+
+func (r *ReplicaSet) ClearTimeouts() {
+	rsTimeoutsAttrTypes := map[string]attr.Type{
+		"create": types.StringType,
+		"read":   types.StringType,
+		"update": types.StringType,
+	}
+
+	r.Timeouts = timeouts.Value{
+		Object: types.ObjectNull(rsTimeoutsAttrTypes),
+	}
 }
 
 func (r *ReplicaSet) RemoveDefaults() {

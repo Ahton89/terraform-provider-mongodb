@@ -182,6 +182,7 @@ func (r *ResourceReplicaSet) ImportState(ctx context.Context, name string) (type
 			}
 
 			rsc.Config.RemoveDefaults()
+			rsc.Config.ClearTimeouts()
 
 			return nil
 		},

@@ -1,6 +1,10 @@
 package types
 
-import "github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
 
 var (
 	DefaultUsers = []string{"admin"} // Default users to exclude from listing
@@ -42,4 +46,17 @@ func (u *Users) Get(username string) *User {
 	}
 
 	return nil
+}
+
+func (u *User) ClearTimeouts() {
+	rsTimeoutsAttrTypes := map[string]attr.Type{
+		"create": types.StringType,
+		"read":   types.StringType,
+		"update": types.StringType,
+		"delete": types.StringType,
+	}
+
+	u.Timeouts = timeouts.Value{
+		Object: types.ObjectNull(rsTimeoutsAttrTypes),
+	}
 }

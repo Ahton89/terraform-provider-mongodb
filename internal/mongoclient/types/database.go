@@ -1,6 +1,10 @@
 package types
 
-import "github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
 
 var (
 	DefaultDatabases = []string{"admin", "config", "local"} // Default databases to exclude from listing
@@ -14,4 +18,16 @@ type Databases struct {
 type Database struct {
 	Name     string         `tfsdk:"name"`
 	Timeouts timeouts.Value `tfsdk:"timeouts" bson:"-"`
+}
+
+func (d *Database) ClearTimeouts() {
+	rsTimeoutsAttrTypes := map[string]attr.Type{
+		"create": types.StringType,
+		"read":   types.StringType,
+		"delete": types.StringType,
+	}
+
+	d.Timeouts = timeouts.Value{
+		Object: types.ObjectNull(rsTimeoutsAttrTypes),
+	}
 }

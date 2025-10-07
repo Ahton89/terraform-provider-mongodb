@@ -113,6 +113,8 @@ func (r *ResourceDatabase) Delete(ctx context.Context, state types.Database) err
 }
 
 func (r *ResourceDatabase) ImportState(ctx context.Context, name string) (types.Database, error) {
+	var d types.Database
+
 	if isDefaultDatabase(name) {
 		return types.Database{}, fmt.Errorf("database %s is a default database and cannot be imported", name)
 	}
@@ -139,6 +141,10 @@ func (r *ResourceDatabase) ImportState(ctx context.Context, name string) (types.
 				return retry.Unrecoverable(fmt.Errorf("database %s does not exist", name))
 			}
 
+			d = types.Database{Name: name}
+
+			d.ClearTimeouts()
+
 			return nil
 		},
 		retry.Attempts(r.RetryAttempts),
@@ -147,7 +153,11 @@ func (r *ResourceDatabase) ImportState(ctx context.Context, name string) (types.
 		retry.Context(ctx),
 	)
 
-	return types.Database{Name: name}, err
+	if err != nil {
+		return types.Database{}, err
+	}
+
+	return d, nil
 }
 
 func (r *ResourceDatabase) connect(ctx context.Context) (*mongo.Client, error) {
