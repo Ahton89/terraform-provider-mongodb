@@ -29,6 +29,7 @@ func (d *dataSourceReplicaSet) Metadata(_ context.Context, req datasource.Metada
 
 func (d *dataSourceReplicaSet) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: "Retrieves the current configuration of a MongoDB replica set, including member details and settings.",
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Computed: true,

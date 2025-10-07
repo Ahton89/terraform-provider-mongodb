@@ -1,0 +1,22 @@
+provider:
+  name: mongodb
+
+rendering:
+  examples_path: examples
+  examples_language: hcl
+
+resources:
+  - name: database
+    subcategory: ""
+  - name: user
+    subcategory: ""
+  - name: replicaset
+    subcategory: ""
+
+data-sources:
+  - name: databases
+    subcategory: ""
+  - name: users
+    subcategory: ""
+  - name: replicaset
+    subcategory: ""

@@ -169,7 +169,7 @@ func isReplicaSetReady(status *types.ReplicaSetStatus, replicaSetName string) bo
 }
 
 // requiredVersion checks if the current MongoDB version is supported by the provider.
-// This is necessary because different versions have different key names for the replica set configuration.
+// Supported versions: 6.x, 7.x, and 8.x
 func requiredVersion(ctx context.Context, client *mongo.Client) error {
 	var v struct {
 		Version string `bson:"version"`
@@ -180,11 +180,21 @@ func requiredVersion(ctx context.Context, client *mongo.Client) error {
 		return fmt.Errorf("failed to get MongoDB version: %s", err)
 	}
 
-	vPrefix := fmt.Sprintf("%s.", types.MongoDBRequiredVersion)
-
-	if !strings.HasPrefix(v.Version, vPrefix) {
-		return fmt.Errorf("unsupported MongoDB version. Current version is %s, but provider required only %s version", v.Version, types.MongoDBRequiredVersion)
+	// Extract major version
+	parts := strings.Split(v.Version, ".")
+	if len(parts) == 0 {
+		return fmt.Errorf("invalid MongoDB version format: %s", v.Version)
 	}
 
-	return nil
+	majorVersion := parts[0]
+
+	// Check if major version is supported
+	for _, supported := range types.SupportedMajorVersions {
+		if majorVersion == supported {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("unsupported MongoDB version: %s. Supported versions: %s",
+		v.Version, types.MongoDBSupportedVersions)
 }

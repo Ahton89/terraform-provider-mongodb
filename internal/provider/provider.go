@@ -51,10 +51,10 @@ func (m *mongoDBProvider) Metadata(_ context.Context, _ provider.MetadataRequest
 func (m *mongoDBProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: fmt.Sprintf(`
-> **IMPORTANT:** This provider supports only MongoDB v%s  
-> **DEFAULT TIMEOUT:** %0.f minutes for all resource operations (create, read, update, delete)  
+> **IMPORTANT:** This provider supports MongoDB v%s
+> **DEFAULT TIMEOUT:** %0.f minutes for all resource operations (create, read, update, delete)
 > You can override the default timeout by setting the "timeouts" block in each resource.`,
-			mongoclientTypes.MongoDBRequiredVersion,
+			mongoclientTypes.MongoDBSupportedVersions,
 			defaultTimeout.Minutes(),
 		),
 		Attributes: map[string]schema.Attribute{
