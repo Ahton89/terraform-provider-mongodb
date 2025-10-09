@@ -34,6 +34,7 @@ func (r *resourceDatabase) Metadata(_ context.Context, req resource.MetadataRequ
 
 func (r *resourceDatabase) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: "Creates and manages a MongoDB database. Databases are containers for collections and can be created, imported, and destroyed.",
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Required: true,

@@ -7,8 +7,10 @@ import (
 )
 
 const (
-	MongoDBRequiredVersion = "6"
+	MongoDBSupportedVersions = "6, 7, 8"
 )
+
+var SupportedMajorVersions = []string{"6", "7", "8"}
 
 type ReplicaSetConfig struct {
 	Config ReplicaSet `bson:"config"`

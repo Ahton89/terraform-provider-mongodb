@@ -31,6 +31,7 @@ func (d *dataSourceDatabases) Metadata(_ context.Context, req datasource.Metadat
 
 func (d *dataSourceDatabases) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: "Retrieves a list of all databases from MongoDB, excluding system databases (admin, config, local).",
 		Attributes: map[string]schema.Attribute{
 			"databases": schema.ListAttribute{
 				Computed: true,

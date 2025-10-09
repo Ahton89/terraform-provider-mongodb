@@ -35,6 +35,7 @@ func (r *resourceUser) Metadata(_ context.Context, req resource.MetadataRequest,
 
 func (r *resourceUser) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: "Creates and manages MongoDB users with role-based access control. Users can have multiple roles across different databases. Passwords are stored in Terraform state.",
 		Attributes: map[string]schema.Attribute{
 			"username": schema.StringAttribute{
 				Required: true,

@@ -4,7 +4,7 @@ APP_NAME = terraform-provider-mongodb
 OS ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 ARCH ?= arm64
 BIN_DIR ?= $(shell go env GOPATH)/bin
-EXAMPLES_DIR ?= ./_examples
+EXAMPLES_DIR ?= ./examples
 
 build:
 	@echo "Compiling $(APP_NAME) for $(OS)/$(ARCH) platform with version $(VERSION)..."
@@ -28,16 +28,27 @@ clean:
 	@rm -f ./$(APP_NAME)-*
 	@echo "Cleaning up... DONE"
 
-preparing-examples:
+# Generate documentation
+generate-docs:
 	@echo "Updating examples version..."
 	@find $(EXAMPLES_DIR) -name "*.tf" -print0 | xargs -0 sed -i '' -E "s/(version = \")= [0-9]+\.[0-9]+\.[0-9]+(\")/\1= $(VERSION)\2/"
 	@echo "Updating examples version... DONE"
+	@echo "Generating documentation..."
+	@go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate \
+		--provider-name mongodb \
+		--rendered-provider-name MongoDB
+	@echo "Generating documentation... DONE"
 
-preparing-docs:
-	@echo "Generating docs..."
-	@tfplugindocs generate --examples-dir $(EXAMPLES_DIR)
-	@echo "Generating docs... DONE"
+# Validate documentation
+validate-docs:
+	@echo "Validating documentation..."
+	@go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs validate \
+		--provider-name mongodb
+	@echo "Validating documentation... DONE"
 
-preparing: preparing-examples preparing-docs
+# Complete documentation workflow: generate + validate
+docs: generate-docs validate-docs
+	@echo "Documentation generation and validation complete!"
 
-.PHONY: build build-all install clean preparing-examples preparing-docs preparing
+.PHONY: build build-all install clean
+.PHONY: generate-docs validate-docs docs

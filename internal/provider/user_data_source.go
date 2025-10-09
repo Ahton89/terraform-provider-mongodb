@@ -29,6 +29,7 @@ func (d *dataSourceUsers) Metadata(_ context.Context, req datasource.MetadataReq
 
 func (d *dataSourceUsers) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: "Retrieves a list of all MongoDB users with their roles and permissions, excluding system users.",
 		Attributes: map[string]schema.Attribute{
 			"users": schema.ListNestedAttribute{
 				Computed: true,
