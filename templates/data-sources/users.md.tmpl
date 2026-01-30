@@ -27,6 +27,18 @@ output "user_list" {
 }
 ```
 
+### List Users from Specific Authentication Source
+
+```terraform
+data "mongodb_users" "custom_db" {
+  auth_source = "users_db"
+}
+
+output "custom_db_usernames" {
+  value = [for user in data.mongodb_users.custom_db.users : user.username]
+}
+```
+
 ### Find User by Username
 
 ```terraform

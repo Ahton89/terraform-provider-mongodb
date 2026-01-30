@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"terraform-provider-mongodb/internal/mongoclient/interfaces"
 	"terraform-provider-mongodb/internal/mongoclient/types"
@@ -12,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
 
@@ -48,6 +50,15 @@ func (r *resourceUser) Schema(ctx context.Context, _ resource.SchemaRequest, res
 				Required:    true,
 				Sensitive:   true,
 				Description: "The password of the user to create.",
+			},
+			"auth_source": schema.StringAttribute{
+				Optional:    true,
+				Computed:    true,
+				Description: "The authentication source to use for the user. Default is 'admin'.",
+				Default:     stringdefault.StaticString(types.DefaultDatabase),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"roles": schema.ListNestedAttribute{
 				Required: true,
@@ -189,9 +200,18 @@ func (r *resourceUser) Delete(ctx context.Context, req resource.DeleteRequest, r
 }
 
 func (r *resourceUser) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	username := req.ID
+	authSource, username, found := strings.Cut(req.ID, ".")
+	if !found {
+		username = req.ID
+		authSource = types.DefaultDatabase
+	}
 
-	state, err := r.client.Resource().User().ImportState(ctx, username)
+	user := types.User{
+		Username:   username,
+		AuthSource: authSource,
+	}
+
+	state, err := r.client.Resource().User().ImportState(ctx, user)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to import user state", err.Error())
 		return

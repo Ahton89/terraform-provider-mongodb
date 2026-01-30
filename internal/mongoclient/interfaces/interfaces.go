@@ -26,7 +26,7 @@ type DataSourceDatabase interface {
 }
 
 type DataSourceUser interface {
-	Read(ctx context.Context) (types.Users, error)
+	Read(ctx context.Context, authSource string) (types.Users, error)
 }
 
 type DataSourceReplicaSet interface {
@@ -53,7 +53,7 @@ type ResourceUser interface {
 	Delete(ctx context.Context, state types.User) error
 	Update(ctx context.Context, plan types.User) error
 	Exists(ctx context.Context, state types.User) (bool, error)
-	ImportState(ctx context.Context, name string) (types.User, error)
+	ImportState(ctx context.Context, user types.User) (types.User, error)
 }
 
 type ResourceReplicaSet interface {

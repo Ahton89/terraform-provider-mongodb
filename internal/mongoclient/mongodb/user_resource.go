@@ -30,7 +30,7 @@ func (r *ResourceUser) Create(ctx context.Context, plan types.User) error {
 				cancel()
 			}()
 
-			exist, err := userExists(ctx, c, plan.Username)
+			exist, err := userExists(ctx, c, plan.Username, plan.AuthSource)
 			if err != nil {
 				return fmt.Errorf("failed to check if user exists: %s", err)
 			}
@@ -53,7 +53,7 @@ func (r *ResourceUser) Create(ctx context.Context, plan types.User) error {
 				{"roles", roles},
 			}
 
-			return c.Database(types.DefaultDatabase).RunCommand(ctx, command).Err()
+			return c.Database(plan.AuthSource).RunCommand(ctx, command).Err()
 		},
 		retry.Attempts(r.RetryAttempts),
 		retry.DelayType(retry.BackOffDelay),
@@ -82,7 +82,7 @@ func (r *ResourceUser) Exists(ctx context.Context, state types.User) (bool, erro
 				cancel()
 			}()
 
-			exist, err = userExists(ctx, c, state.Username)
+			exist, err = userExists(ctx, c, state.Username, state.AuthSource)
 
 			return err
 		},
@@ -113,7 +113,7 @@ func (r *ResourceUser) Delete(ctx context.Context, state types.User) error {
 				cancel()
 			}()
 
-			exist, err := userExists(ctx, c, state.Username)
+			exist, err := userExists(ctx, c, state.Username, state.AuthSource)
 			if err != nil {
 				return fmt.Errorf("failed to check if user exists: %s", err)
 			}
@@ -122,7 +122,7 @@ func (r *ResourceUser) Delete(ctx context.Context, state types.User) error {
 				return retry.Unrecoverable(fmt.Errorf("user %s does not exist", state.Username))
 			}
 
-			return c.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{
+			return c.Database(state.AuthSource).RunCommand(ctx, bson.D{
 				{"dropUser", state.Username},
 			}).Err()
 		},
@@ -153,7 +153,7 @@ func (r *ResourceUser) Update(ctx context.Context, plan types.User) error {
 				cancel()
 			}()
 
-			exist, err := userExists(ctx, c, plan.Username)
+			exist, err := userExists(ctx, c, plan.Username, plan.AuthSource)
 			if err != nil {
 				return fmt.Errorf("failed to check if user exists: %s", err)
 			}
@@ -176,7 +176,7 @@ func (r *ResourceUser) Update(ctx context.Context, plan types.User) error {
 				{"roles", roles},
 			}
 
-			return c.Database(types.DefaultDatabase).RunCommand(ctx, command).Err()
+			return c.Database(plan.AuthSource).RunCommand(ctx, command).Err()
 		},
 		retry.Attempts(r.RetryAttempts),
 		retry.DelayType(retry.BackOffDelay),
@@ -187,11 +187,11 @@ func (r *ResourceUser) Update(ctx context.Context, plan types.User) error {
 	return err
 }
 
-func (r *ResourceUser) ImportState(ctx context.Context, username string) (types.User, error) {
+func (r *ResourceUser) ImportState(ctx context.Context, importUser types.User) (types.User, error) {
 	var u types.User
 
-	if isDefaultUser(username) {
-		return types.User{}, fmt.Errorf("user %s is a default user and cannot be imported", username)
+	if isDefaultUser(importUser.Username) {
+		return types.User{}, fmt.Errorf("user %s is a default user and cannot be imported", importUser.Username)
 	}
 
 	err := retry.Do(
@@ -207,16 +207,16 @@ func (r *ResourceUser) ImportState(ctx context.Context, username string) (types.
 				cancel()
 			}()
 
-			users, err := listUsers(ctx, c)
+			users, err := listUsers(ctx, c, importUser.AuthSource)
 			if err != nil {
 				return fmt.Errorf("failed to check if user exists: %s", err)
 			}
 
-			if !users.Exist(username) {
-				return retry.Unrecoverable(fmt.Errorf("user %s does not exist", username))
+			if !users.Exist(importUser.Username) {
+				return retry.Unrecoverable(fmt.Errorf("user %s does not exist", importUser.Username))
 			}
 
-			user := users.Get(username)
+			user := users.Get(importUser.Username)
 
 			roles := make([]types.Role, 0, len(user.Roles))
 			for _, i := range user.Roles {
@@ -227,8 +227,9 @@ func (r *ResourceUser) ImportState(ctx context.Context, username string) (types.
 			}
 
 			u = types.User{
-				Username: user.Username,
-				Roles:    roles,
+				Username:   user.Username,
+				AuthSource: importUser.AuthSource,
+				Roles:      roles,
 			}
 
 			u.ClearTimeouts()

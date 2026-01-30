@@ -5,9 +5,13 @@ import (
 	"fmt"
 
 	"terraform-provider-mongodb/internal/mongoclient/interfaces"
+	"terraform-provider-mongodb/internal/mongoclient/types"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	tftypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 var (
@@ -27,33 +31,53 @@ func (d *dataSourceUsers) Metadata(_ context.Context, req datasource.MetadataReq
 	resp.TypeName = req.ProviderTypeName + "_users"
 }
 
-func (d *dataSourceUsers) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *dataSourceUsers) Schema(ctx context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Retrieves a list of all MongoDB users with their roles and permissions, excluding system users.",
 		Attributes: map[string]schema.Attribute{
+			"auth_source": schema.StringAttribute{
+				Optional:    true,
+				Computed:    true,
+				Description: "The authentication source to use for the users. Default is 'admin'.",
+			},
 			"users": schema.ListNestedAttribute{
 				Computed: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"username": schema.StringAttribute{
-							Computed: true,
+							Computed:    true,
+							Description: "The username of the user.",
 						},
 						"password": schema.StringAttribute{
-							Computed: true,
+							Computed:    true,
+							Sensitive:   true,
+							Description: "The password of the user.",
+						},
+						"auth_source": schema.StringAttribute{
+							Computed:    true,
+							Description: "The authentication source of the user.",
 						},
 						"roles": schema.ListNestedAttribute{
 							Computed: true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"role": schema.StringAttribute{
-										Computed: true,
+										Computed:    true,
+										Description: "The role of the user.",
 									},
 									"database": schema.StringAttribute{
-										Computed: true,
+										Computed:    true,
+										Description: "The database of the user.",
 									},
 								},
 							},
 						},
+						"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+							Create: false,
+							Read:   false,
+							Update: false,
+							Delete: false,
+						}),
 					},
 				},
 			},
@@ -61,8 +85,20 @@ func (d *dataSourceUsers) Schema(_ context.Context, _ datasource.SchemaRequest, 
 	}
 }
 
-func (d *dataSourceUsers) Read(ctx context.Context, _ datasource.ReadRequest, resp *datasource.ReadResponse) {
-	state, err := d.client.DataSource().User().Read(ctx)
+func (d *dataSourceUsers) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var authSourceAttr tftypes.String
+
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("auth_source"), &authSourceAttr)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	authSource := authSourceAttr.ValueString()
+	if authSource == "" {
+		authSource = types.DefaultDatabase
+	}
+
+	state, err := d.client.DataSource().User().Read(ctx, authSource)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to read users", err.Error())
 		return

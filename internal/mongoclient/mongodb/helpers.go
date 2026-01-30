@@ -54,10 +54,10 @@ func isDefaultDatabase(name string) bool {
 /* USERS */
 
 // listUsers returns a list of users in the database.
-func listUsers(ctx context.Context, client *mongo.Client) (types.Users, error) {
+func listUsers(ctx context.Context, client *mongo.Client, authSource string) (types.Users, error) {
 	r := types.Users{}
 
-	err := client.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{
+	err := client.Database(authSource).RunCommand(ctx, bson.D{
 		{"usersInfo", 1},
 	}).Decode(&r)
 
@@ -70,8 +70,8 @@ func isDefaultUser(username string) bool {
 }
 
 // userExists checks if the user already exists in the database.
-func userExists(ctx context.Context, client *mongo.Client, username string) (bool, error) {
-	u, err := listUsers(ctx, client)
+func userExists(ctx context.Context, client *mongo.Client, username string, authSource string) (bool, error) {
+	u, err := listUsers(ctx, client, authSource)
 	if err != nil {
 		return false, err
 	}

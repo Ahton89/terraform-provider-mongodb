@@ -172,6 +172,7 @@ output "app_connection_string" {
 
 ### Optional
 
+- `auth_source` (String) The authentication source to use for the user. Default is 'admin'.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 <a id="nestedatt--roles"></a>
@@ -203,17 +204,27 @@ In addition to the arguments above, the following attributes are exported:
 
 ## Import
 
-Existing users can be imported using the username:
+Existing users can be imported using one of the following ID formats:
+
+- `username` — uses default auth source `admin`
+- `auth_source.username` — specify a non-default authentication database
 
 ```bash
-terraform import mongodb_user.example username
+# Default auth source (admin)
+terraform import mongodb_user.example app_user
+
+# Custom auth source (e.g., users_db)
+terraform import mongodb_user.example users_db.app_user
 ```
 
 **Example:**
 
 ```bash
-# Import existing user named "app_user"
+# Import existing user named "app_user" from default auth DB (admin)
 terraform import mongodb_user.app app_user
+
+# Import existing user from a custom auth DB
+terraform import mongodb_user.reporting users_db.reporting_user
 ```
 
 After import:

@@ -13,14 +13,16 @@ var (
 /* USER */
 
 type Users struct {
-	Users []User `tfsdk:"users" bson:"users"`
+	AuthSource string `tfsdk:"auth_source" bson:"-"`
+	Users      []User `tfsdk:"users" bson:"users"`
 }
 
 type User struct {
-	Username string         `tfsdk:"username" bson:"user"`
-	Password string         `tfsdk:"password" bson:"password,omitempty"`
-	Roles    []Role         `tfsdk:"roles" bson:"roles"`
-	Timeouts timeouts.Value `tfsdk:"timeouts" bson:"-"`
+	Username   string         `tfsdk:"username" bson:"user"`
+	Password   string         `tfsdk:"password" bson:"password,omitempty"`
+	AuthSource string         `tfsdk:"auth_source" bson:"authSource,omitempty"`
+	Roles      []Role         `tfsdk:"roles" bson:"roles"`
+	Timeouts   timeouts.Value `tfsdk:"timeouts" bson:"-"`
 }
 
 type Role struct {

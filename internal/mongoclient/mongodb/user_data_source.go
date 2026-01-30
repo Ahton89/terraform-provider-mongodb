@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-func (d *DataSourceUser) Read(ctx context.Context) (types.Users, error) {
+func (d *DataSourceUser) Read(ctx context.Context, authSource string) (types.Users, error) {
 	us := types.Users{}
 
 	err := retry.Do(
@@ -27,11 +27,12 @@ func (d *DataSourceUser) Read(ctx context.Context) (types.Users, error) {
 				cancel()
 			}()
 
-			list, err := listUsers(ctx, c)
+			list, err := listUsers(ctx, c, authSource)
 			if err != nil {
 				return fmt.Errorf("list users failed with error: %s", err)
 			}
 
+			us.AuthSource = authSource
 			for _, i := range list.Users {
 				if isDefaultUser(i.Username) {
 					continue
@@ -47,9 +48,10 @@ func (d *DataSourceUser) Read(ctx context.Context) (types.Users, error) {
 				}
 
 				us.Users = append(us.Users, types.User{
-					Username: i.Username,
-					Password: i.Password,
-					Roles:    r,
+					Username:   i.Username,
+					Password:   i.Password,
+					AuthSource: authSource,
+					Roles:      r,
 				})
 			}
 

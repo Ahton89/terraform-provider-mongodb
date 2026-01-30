@@ -2,7 +2,7 @@ terraform {
   required_providers {
     mongodb = {
       source = "registry.terraform.io/Ahton89/mongodb"
-      version = "= 0.2.12"
+      version = "= 0.2.13"
     }
   }
 }
@@ -28,8 +28,9 @@ locals {
       ]
     },
     {
-      username = "example_user_2"
-      password = "example_user_2_password"
+      username    = "example_user_2"
+      password    = "example_user_2_password"
+      auth_source = "example_database_2"
       roles = [
         {
           database = "example_database_2"
@@ -40,15 +41,16 @@ locals {
           role = "read"
         }
       ]
-    }
+    },
   ]
 }
 
 resource "mongodb_user" "user" {
   for_each = { for user in local.users : user.username => user }
 
-  username = each.value.username
-  password = each.value.password
+  username    = each.value.username
+  password    = each.value.password
+  auth_source = try(each.value.auth_source, null)
 
   roles = [
     for role in each.value.roles : {
