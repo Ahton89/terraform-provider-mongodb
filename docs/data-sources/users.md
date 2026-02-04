@@ -225,19 +225,27 @@ output "security_compliance" {
 <a id="nestedatt--users"></a>
 ### Nested Schema for `users`
 
+Optional:
+
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--users--timeouts))
+
 Read-Only:
 
-- `password` (String)
+- `password` (String, Sensitive) The password of the user.
 - `roles` (Attributes List) (see [below for nested schema](#nestedatt--users--roles))
-- `username` (String)
+- `username` (String) The username of the user.
+
+<a id="nestedatt--users--timeouts"></a>
+### Nested Schema for `users.timeouts`
+
 
 <a id="nestedatt--users--roles"></a>
 ### Nested Schema for `users.roles`
 
 Read-Only:
 
-- `database` (String)
-- `role` (String)
+- `database` (String) The database of the user.
+- `role` (String) The role of the user.
 
 ## Attribute Reference
 

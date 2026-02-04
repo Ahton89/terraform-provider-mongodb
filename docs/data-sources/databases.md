@@ -148,14 +148,21 @@ output "database_inventory" {
 
 ### Read-Only
 
-- `databases` (List of Object) List of databases with names (see [below for nested schema](#nestedatt--databases))
+- `databases` (Attributes List) List of databases with names (see [below for nested schema](#nestedatt--databases))
 
 <a id="nestedatt--databases"></a>
 ### Nested Schema for `databases`
 
+Optional:
+
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--databases--timeouts))
+
 Read-Only:
 
-- `name` (String)
+- `name` (String) Database name
+
+<a id="nestedatt--databases--timeouts"></a>
+### Nested Schema for `databases.timeouts`
 
 ## Attribute Reference
 

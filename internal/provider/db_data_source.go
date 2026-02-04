@@ -6,10 +6,9 @@ import (
 
 	"terraform-provider-mongodb/internal/mongoclient/interfaces"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	tfypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 var (
@@ -29,15 +28,24 @@ func (d *dataSourceDatabases) Metadata(_ context.Context, req datasource.Metadat
 	resp.TypeName = req.ProviderTypeName + "_databases"
 }
 
-func (d *dataSourceDatabases) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *dataSourceDatabases) Schema(ctx context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Retrieves a list of all databases from MongoDB, excluding system databases (admin, config, local).",
 		Attributes: map[string]schema.Attribute{
-			"databases": schema.ListAttribute{
+			"databases": schema.ListNestedAttribute{
 				Computed: true,
-				ElementType: tfypes.ObjectType{
-					AttrTypes: map[string]attr.Type{
-						"name": tfypes.StringType,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"name": schema.StringAttribute{
+							Computed:    true,
+							Description: "Database name",
+						},
+						"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+							Create: false,
+							Read:   false,
+							Update: false,
+							Delete: false,
+						}),
 					},
 				},
 				Description: "List of databases with names",

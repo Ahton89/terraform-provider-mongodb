@@ -1,4 +1,4 @@
-VERSION := 0.2.12
+VERSION := 0.2.13
 LDFLAGS = "-X 'main.version=$(VERSION)'"
 APP_NAME = terraform-provider-mongodb
 OS ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
@@ -31,7 +31,7 @@ clean:
 # Generate documentation
 generate-docs:
 	@echo "Updating examples version..."
-	@find $(EXAMPLES_DIR) -name "*.tf" -print0 | xargs -0 sed -i '' -E "s/(version = \")= [0-9]+\.[0-9]+\.[0-9]+(\")/\1= $(VERSION)\2/"
+	@find $(EXAMPLES_DIR) -name "*.tf" -print0 | xargs -0 sed -i -E "s/(version = \")= [0-9]+\.[0-9]+\.[0-9]+(\")/\1= $(VERSION)\2/"
 	@echo "Updating examples version... DONE"
 	@echo "Generating documentation..."
 	@go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate \
