@@ -6,6 +6,7 @@ import (
 
 	"terraform-provider-mongodb/internal/mongoclient/interfaces"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 )
@@ -27,7 +28,7 @@ func (d *dataSourceUsers) Metadata(_ context.Context, req datasource.MetadataReq
 	resp.TypeName = req.ProviderTypeName + "_users"
 }
 
-func (d *dataSourceUsers) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *dataSourceUsers) Schema(ctx context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Retrieves a list of all MongoDB users with their roles and permissions, excluding system users.",
 		Attributes: map[string]schema.Attribute{
@@ -36,24 +37,35 @@ func (d *dataSourceUsers) Schema(_ context.Context, _ datasource.SchemaRequest, 
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"username": schema.StringAttribute{
-							Computed: true,
+							Computed:    true,
+							Description: "The username of the user.",
 						},
 						"password": schema.StringAttribute{
-							Computed: true,
+							Computed:    true,
+							Sensitive:   true,
+							Description: "The password of the user.",
 						},
 						"roles": schema.ListNestedAttribute{
 							Computed: true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"role": schema.StringAttribute{
-										Computed: true,
+										Computed:    true,
+										Description: "The role of the user.",
 									},
 									"database": schema.StringAttribute{
-										Computed: true,
+										Computed:    true,
+										Description: "The database of the user.",
 									},
 								},
 							},
 						},
+						"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+							Create: false,
+							Read:   false,
+							Update: false,
+							Delete: false,
+						}),
 					},
 				},
 			},

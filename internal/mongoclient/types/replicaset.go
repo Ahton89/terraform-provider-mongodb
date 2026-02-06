@@ -71,6 +71,9 @@ func (r *ReplicaSet) ClearTimeouts() {
 	}
 }
 
+func (r *ReplicaSet) GetTimeouts() timeouts.Value  { return r.Timeouts }
+func (r *ReplicaSet) SetTimeouts(v timeouts.Value) { r.Timeouts = v }
+
 func (r *ReplicaSet) RemoveDefaults() {
 	r.ClearVersion()
 

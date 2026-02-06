@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"regexp"
 
 	"terraform-provider-mongodb/internal/mongoclient/interfaces"
@@ -226,7 +225,7 @@ func (r *resourceReplicaSet) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	if r.onlyTimeoutsChanged(plan, state) {
+	if onlyTimeoutsChanged[types.ReplicaSet](&plan, &state) {
 		resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 		return
 	}
@@ -283,14 +282,4 @@ func (r *resourceReplicaSet) Configure(_ context.Context, req resource.Configure
 	}
 
 	r.client = client
-}
-
-func (r *resourceReplicaSet) onlyTimeoutsChanged(plan, state types.ReplicaSet) bool {
-	cpPlan := plan
-	cpState := state
-
-	cpPlan.Timeouts = timeouts.Value{}
-	cpState.Timeouts = timeouts.Value{}
-
-	return reflect.DeepEqual(cpPlan, cpState)
 }

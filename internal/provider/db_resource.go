@@ -109,7 +109,21 @@ func (r *resourceDatabase) Read(ctx context.Context, req resource.ReadRequest, r
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
-func (r *resourceDatabase) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *resourceDatabase) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	plan := types.Database{}
+	state := types.Database{}
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if onlyTimeoutsChanged[types.Database](&plan, &state) {
+		resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+		return
+	}
+
 	resp.Diagnostics.AddWarning(
 		"Update not supported",
 		"The update method is not implemented for this resource, and any changes will require resource recreation.",
