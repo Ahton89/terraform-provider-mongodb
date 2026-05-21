@@ -2,7 +2,7 @@ terraform {
   required_providers {
     mongodb = {
       source = "registry.terraform.io/Ahton89/mongodb"
-      version = "= 0.2.12"
+      version = "= 0.2.13"
     }
   }
 }
@@ -14,5 +14,10 @@ provider "mongodb" {
 data "mongodb_users" "example_mongodb" {}
 
 output "example_mongodb" {
-  value = data.mongodb_users.example_mongodb
+  value     = data.mongodb_users.example_mongodb
+  sensitive = true
+}
+
+output "example_mongodb_usernames" {
+  value = nonsensitive(data.mongodb_users.example_mongodb.users.*.username)
 }

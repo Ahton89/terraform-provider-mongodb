@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"terraform-provider-mongodb/internal/mongoclient/interfaces"
 	"terraform-provider-mongodb/internal/mongoclient/types"
@@ -141,7 +140,7 @@ func (r *resourceUser) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	if r.onlyTimeoutsChanged(plan, state) {
+	if onlyTimeoutsChanged[types.User](&plan, &state) {
 		resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 		return
 	}
@@ -216,14 +215,4 @@ func (r *resourceUser) Configure(_ context.Context, req resource.ConfigureReques
 	}
 
 	r.client = client
-}
-
-func (r *resourceUser) onlyTimeoutsChanged(plan, state types.User) bool {
-	cpPlan := plan
-	cpState := state
-
-	cpPlan.Timeouts = timeouts.Value{}
-	cpState.Timeouts = timeouts.Value{}
-
-	return reflect.DeepEqual(cpPlan, cpState)
 }

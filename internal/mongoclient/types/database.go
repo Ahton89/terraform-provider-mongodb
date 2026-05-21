@@ -31,3 +31,6 @@ func (d *Database) ClearTimeouts() {
 		Object: types.ObjectNull(rsTimeoutsAttrTypes),
 	}
 }
+
+func (d *Database) GetTimeouts() timeouts.Value  { return d.Timeouts }
+func (d *Database) SetTimeouts(v timeouts.Value) { d.Timeouts = v }

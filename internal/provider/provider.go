@@ -3,12 +3,14 @@ package provider
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"regexp"
 	"time"
 
 	"terraform-provider-mongodb/internal/mongoclient"
 	mongoclientTypes "terraform-provider-mongodb/internal/mongoclient/types"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -132,4 +134,29 @@ func (m *mongoDBProvider) Resources(_ context.Context) []func() resource.Resourc
 		ResourceUser,
 		ResourceReplicaSet,
 	}
+}
+
+/* Helpers */
+
+type hasTimeouts interface {
+	GetTimeouts() timeouts.Value
+	SetTimeouts(timeouts.Value)
+}
+
+func onlyTimeoutsChanged[T any, PT interface {
+	*T
+	hasTimeouts
+}](plan, state PT) bool {
+	vp := reflect.ValueOf(plan)
+	vs := reflect.ValueOf(state)
+
+	cpPlan := reflect.New(vp.Elem().Type())
+	cpState := reflect.New(vs.Elem().Type())
+	cpPlan.Elem().Set(vp.Elem())
+	cpState.Elem().Set(vs.Elem())
+
+	cpPlan.Interface().(hasTimeouts).SetTimeouts(timeouts.Value{})
+	cpState.Interface().(hasTimeouts).SetTimeouts(timeouts.Value{})
+
+	return reflect.DeepEqual(cpPlan.Elem().Interface(), cpState.Elem().Interface())
 }

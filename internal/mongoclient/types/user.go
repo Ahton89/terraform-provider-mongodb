@@ -60,3 +60,6 @@ func (u *User) ClearTimeouts() {
 		Object: types.ObjectNull(rsTimeoutsAttrTypes),
 	}
 }
+
+func (u *User) GetTimeouts() timeouts.Value  { return u.Timeouts }
+func (u *User) SetTimeouts(v timeouts.Value) { u.Timeouts = v }
