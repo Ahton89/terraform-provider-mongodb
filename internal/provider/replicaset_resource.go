@@ -330,9 +330,9 @@ func (r *resourceReplicaSet) Update(ctx context.Context, req resource.UpdateRequ
 }
 
 func (r *resourceReplicaSet) Delete(_ context.Context, _ resource.DeleteRequest, resp *resource.DeleteResponse) {
-	resp.Diagnostics.AddWarning(
+	resp.Diagnostics.AddError(
 		"Delete Not Supported",
-		"The delete method is not implemented for this resource, because it requires manual actions from the administrator.",
+		"The delete method is not implemented for this resource, because it requires manual actions from the administrator. After manually deleting you should clean up the state by running `terraform state rm mongodb_replicaset.<name>`.",
 	)
 }
 
