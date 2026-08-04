@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -36,6 +37,11 @@ func (r *ResourceReplicaSet) Create(ctx context.Context, plan types.ReplicaSet) 
 				{"replSetInitiate", plan},
 			}).Err()
 			if err != nil {
+				var cmdErr mongo.CommandError
+				// Return if already exists
+				if errors.As(err, &cmdErr) && cmdErr.Code == 23 {
+					return nil
+				}
 				return fmt.Errorf("create replica set failed with error: %s", err)
 			}
 
