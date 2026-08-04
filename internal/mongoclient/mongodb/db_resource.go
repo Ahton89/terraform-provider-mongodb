@@ -20,7 +20,7 @@ func (r *ResourceDatabase) Create(ctx context.Context, plan types.Database) erro
 		func() error {
 			c, err := r.connect(ctx)
 			if err != nil {
-				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
+				return fmt.Errorf("connection to MongoDB failed with error: %w", err)
 			}
 
 			defer func() {
@@ -31,7 +31,7 @@ func (r *ResourceDatabase) Create(ctx context.Context, plan types.Database) erro
 
 			exist, err := databaseExists(ctx, c, plan.Name)
 			if err != nil {
-				return fmt.Errorf("failed to check if database exists: %s", err)
+				return fmt.Errorf("failed to check if database exists: %w", err)
 			}
 
 			if exist {
@@ -56,7 +56,7 @@ func (r *ResourceDatabase) Exists(ctx context.Context, state types.Database) (bo
 		func() error {
 			c, err := r.connect(ctx)
 			if err != nil {
-				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
+				return fmt.Errorf("connection to MongoDB failed with error: %w", err)
 			}
 
 			defer func() {
@@ -83,7 +83,7 @@ func (r *ResourceDatabase) Delete(ctx context.Context, state types.Database) err
 		func() error {
 			c, err := r.connect(ctx)
 			if err != nil {
-				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
+				return fmt.Errorf("connection to MongoDB failed with error: %w", err)
 			}
 
 			defer func() {
@@ -94,7 +94,7 @@ func (r *ResourceDatabase) Delete(ctx context.Context, state types.Database) err
 
 			exist, err := databaseExists(ctx, c, state.Name)
 			if err != nil {
-				return fmt.Errorf("database exist check failed with error: %s", err)
+				return fmt.Errorf("database exist check failed with error: %w", err)
 			}
 
 			if !exist {
@@ -123,7 +123,7 @@ func (r *ResourceDatabase) ImportState(ctx context.Context, name string) (types.
 		func() error {
 			c, err := r.connect(ctx)
 			if err != nil {
-				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
+				return fmt.Errorf("connection to MongoDB failed with error: %w", err)
 			}
 
 			defer func() {
@@ -134,7 +134,7 @@ func (r *ResourceDatabase) ImportState(ctx context.Context, name string) (types.
 
 			exist, err := databaseExists(ctx, c, name)
 			if err != nil {
-				return fmt.Errorf("database exist check failed with error: %s", err)
+				return fmt.Errorf("database exist check failed with error: %w", err)
 			}
 
 			if !exist {
@@ -174,7 +174,7 @@ func (r *ResourceDatabase) connect(ctx context.Context) (*mongo.Client, error) {
 		_ = client.Disconnect(disconnectCtx)
 		cancel()
 
-		return nil, fmt.Errorf("failed to ping MongoDB: %s", err)
+		return nil, fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
 
 	return client, nil

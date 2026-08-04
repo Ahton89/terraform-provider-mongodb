@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/x/mongo/driver/topology"
 )
 
 func (r *ResourceReplicaSet) Create(ctx context.Context, plan types.ReplicaSet) error {
@@ -19,7 +20,7 @@ func (r *ResourceReplicaSet) Create(ctx context.Context, plan types.ReplicaSet) 
 		func() error {
 			c, err := r.directConnect(ctx)
 			if err != nil {
-				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
+				return fmt.Errorf("connection to MongoDB failed with error: %w", err)
 			}
 
 			defer func() {
@@ -30,7 +31,7 @@ func (r *ResourceReplicaSet) Create(ctx context.Context, plan types.ReplicaSet) 
 
 			err = requiredVersion(ctx, c)
 			if err != nil {
-				return fmt.Errorf("required version check failed with error: %s", err)
+				return fmt.Errorf("required version check failed with error: %w", err)
 			}
 
 			err = c.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{
@@ -45,7 +46,7 @@ func (r *ResourceReplicaSet) Create(ctx context.Context, plan types.ReplicaSet) 
 				if errors.As(err, &cmdErr) && cmdErr.Code == 74 {
 					return retry.Unrecoverable(fmt.Errorf("no replication enabled for replica set %s", plan.Name))
 				}
-				return fmt.Errorf("create replica set failed with error: %s", err)
+				return fmt.Errorf("create replica set failed with error: %w", err)
 			}
 
 			return r.waitForReplicaSetReady(ctx, plan.Name)
@@ -66,7 +67,17 @@ func (r *ResourceReplicaSet) Exists(ctx context.Context, state types.ReplicaSet)
 		func() error {
 			c, _, err := r.connect(ctx)
 			if err != nil {
-				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
+				// Try to connect directly
+				// To cover case when mongo cluster was recreated, but state still exists
+				var selectionErr topology.ServerSelectionError
+				if errors.As(err, &selectionErr) {
+					c, err = r.directConnect(ctx)
+					if err != nil {
+						return fmt.Errorf("direct connection to MongoDB failed with error: %w", err)
+					}
+				} else {
+					return fmt.Errorf("connection to MongoDB failed with error: %w", err)
+				}
 			}
 
 			defer func() {
@@ -77,12 +88,20 @@ func (r *ResourceReplicaSet) Exists(ctx context.Context, state types.ReplicaSet)
 
 			err = requiredVersion(ctx, c)
 			if err != nil {
-				return fmt.Errorf("required version check failed with error: %s", err)
+				return fmt.Errorf("required version check failed with error: %w", err)
 			}
 
 			rsc, err = getReplicaSetConfig(ctx, c)
 			if err != nil {
-				return fmt.Errorf("get replica set config failed with error: %s", err)
+				var commandErr mongo.CommandError
+				if errors.As(err, &commandErr) && commandErr.Code == 94 {
+					// NotYetInitialized, then create a new replica set
+					return nil
+				}
+				if errors.As(err, &commandErr) && commandErr.Code == 76 {
+					return retry.Unrecoverable(fmt.Errorf("no replication enabled for replica set %s", state.Name))
+				}
+				return fmt.Errorf("get replica set config failed with error: %w", err)
 			}
 
 			return nil
@@ -94,7 +113,11 @@ func (r *ResourceReplicaSet) Exists(ctx context.Context, state types.ReplicaSet)
 	)
 
 	if err != nil {
-		return types.ReplicaSet{}, false, fmt.Errorf("failed to check if replica set exists: %s", err)
+		return types.ReplicaSet{}, false, fmt.Errorf("failed to check if replica set exists: %w", err)
+	}
+
+	if rsc == nil {
+		return types.ReplicaSet{}, false, nil
 	}
 
 	return rsc.Config, rsc.Config.Name == state.Name, nil
@@ -105,7 +128,7 @@ func (r *ResourceReplicaSet) Update(ctx context.Context, state types.ReplicaSet)
 		func() error {
 			c, _, err := r.connect(ctx)
 			if err != nil {
-				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
+				return fmt.Errorf("connection to MongoDB failed with error: %w", err)
 			}
 
 			defer func() {
@@ -116,12 +139,12 @@ func (r *ResourceReplicaSet) Update(ctx context.Context, state types.ReplicaSet)
 
 			err = requiredVersion(ctx, c)
 			if err != nil {
-				return fmt.Errorf("required version check failed with error: %s", err)
+				return fmt.Errorf("required version check failed with error: %w", err)
 			}
 
 			status, err := getReplicaSetStatus(ctx, c)
 			if err != nil {
-				return fmt.Errorf("get replica set status failed with error: %s", err)
+				return fmt.Errorf("get replica set status failed with error: %w", err)
 			}
 
 			if !isReplicaSetReady(status, state.Name) {
@@ -131,7 +154,7 @@ func (r *ResourceReplicaSet) Update(ctx context.Context, state types.ReplicaSet)
 			// Get current config version and increment it
 			version, err := getReplicaSetConfigVersion(ctx, c)
 			if err != nil {
-				return fmt.Errorf("get replica set config version failed with error: %s", err)
+				return fmt.Errorf("get replica set config version failed with error: %w", err)
 			}
 
 			version++
@@ -143,7 +166,7 @@ func (r *ResourceReplicaSet) Update(ctx context.Context, state types.ReplicaSet)
 				{"replSetReconfig", state},
 			}).Err()
 			if err != nil {
-				return fmt.Errorf("updating replica set failed with error: %s", err)
+				return fmt.Errorf("updating replica set failed with error: %w", err)
 			}
 
 			// Clear version in state
@@ -167,7 +190,7 @@ func (r *ResourceReplicaSet) ImportState(ctx context.Context, name string) (type
 		func() error {
 			c, _, err := r.connect(ctx)
 			if err != nil {
-				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
+				return fmt.Errorf("connection to MongoDB failed with error: %w", err)
 			}
 
 			defer func() {
@@ -178,16 +201,16 @@ func (r *ResourceReplicaSet) ImportState(ctx context.Context, name string) (type
 
 			err = requiredVersion(ctx, c)
 			if err != nil {
-				return fmt.Errorf("required version check failed with error: %s", err)
+				return fmt.Errorf("required version check failed with error: %w", err)
 			}
 
 			rsc, err = getReplicaSetConfig(ctx, c)
 			if err != nil {
-				return fmt.Errorf("get replica set config failed with error: %s", err)
+				return fmt.Errorf("get replica set config failed with error: %w", err)
 			}
 
 			if rsc.Config.Name != name {
-				return retry.Unrecoverable(fmt.Errorf("replica set %s does not exist", name))
+				return retry.Unrecoverable(fmt.Errorf("replica set %s does not exist: %w", name, err))
 			}
 
 			rsc.Config.ClearTimeouts()
@@ -225,7 +248,7 @@ func (r *ResourceReplicaSet) connect(ctx context.Context) (*mongo.Client, bool, 
 		_ = client.Disconnect(disconnectCtx)
 		cancel()
 
-		return nil, true, fmt.Errorf("failed to ping MongoDB: %s", err)
+		return nil, true, fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
 
 	return client, false, nil
@@ -248,7 +271,7 @@ func (r *ResourceReplicaSet) directConnect(ctx context.Context) (*mongo.Client, 
 		_ = client.Disconnect(disconnectCtx)
 		cancel()
 
-		return nil, fmt.Errorf("failed to ping MongoDB: %s", err)
+		return nil, fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
 
 	return client, nil
@@ -277,7 +300,7 @@ func (r *ResourceReplicaSet) waitForReplicaSetReady(ctx context.Context, replica
 				if retryable {
 					continue
 				}
-				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
+				return fmt.Errorf("connection to MongoDB failed with error: %w", err)
 			}
 
 			status, err = getReplicaSetStatus(ctx, client)

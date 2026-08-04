@@ -19,7 +19,7 @@ func (d *DataSourceDatabase) Read(ctx context.Context) (types.Databases, error) 
 		func() error {
 			c, err := d.connect(ctx)
 			if err != nil {
-				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
+				return fmt.Errorf("connection to MongoDB failed with error: %w", err)
 			}
 
 			defer func() {
@@ -37,7 +37,7 @@ func (d *DataSourceDatabase) Read(ctx context.Context) (types.Databases, error) 
 				},
 			)
 			if err != nil {
-				return fmt.Errorf("list databases failed with error: %s", err)
+				return fmt.Errorf("list databases failed with error: %w", err)
 			}
 
 			for _, i := range list {
@@ -75,7 +75,7 @@ func (d *DataSourceDatabase) connect(ctx context.Context) (*mongo.Client, error)
 		_ = client.Disconnect(disconnectCtx)
 		cancel()
 
-		return nil, fmt.Errorf("failed to ping MongoDB: %s", err)
+		return nil, fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
 
 	return client, nil
