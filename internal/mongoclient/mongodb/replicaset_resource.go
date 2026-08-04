@@ -50,7 +50,7 @@ func (r *ResourceReplicaSet) Create(ctx context.Context, plan types.ReplicaSet) 
 	return err
 }
 
-func (r *ResourceReplicaSet) Exists(ctx context.Context, state types.ReplicaSet) (bool, error) {
+func (r *ResourceReplicaSet) Exists(ctx context.Context, state types.ReplicaSet) (types.ReplicaSet, bool, error) {
 	var rsc *types.ReplicaSetConfig
 
 	err := retry.Do(
@@ -85,10 +85,10 @@ func (r *ResourceReplicaSet) Exists(ctx context.Context, state types.ReplicaSet)
 	)
 
 	if err != nil {
-		return false, fmt.Errorf("failed to check if replica set exists: %s", err)
+		return types.ReplicaSet{}, false, fmt.Errorf("failed to check if replica set exists: %s", err)
 	}
 
-	return rsc.Config.Name == state.Name, nil
+	return rsc.Config, rsc.Config.Name == state.Name, nil
 }
 
 func (r *ResourceReplicaSet) Update(ctx context.Context, state types.ReplicaSet) error {
@@ -181,7 +181,6 @@ func (r *ResourceReplicaSet) ImportState(ctx context.Context, name string) (type
 				return retry.Unrecoverable(fmt.Errorf("replica set %s does not exist", name))
 			}
 
-			rsc.Config.RemoveDefaults()
 			rsc.Config.ClearTimeouts()
 
 			return nil

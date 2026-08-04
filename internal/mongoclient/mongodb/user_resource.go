@@ -256,7 +256,7 @@ func (r *ResourceUser) connect(ctx context.Context) (*mongo.Client, error) {
 		return nil, err
 	}
 
-	err = client.Ping(ctx, nil)
+	// err = client.Ping(ctx, nil)
 	if err != nil {
 		disconnectCtx, cancel := context.WithTimeout(ctx, defaultContextTimeout)
 		_ = client.Disconnect(disconnectCtx)
