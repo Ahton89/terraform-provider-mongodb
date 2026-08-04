@@ -42,6 +42,9 @@ func (r *ResourceReplicaSet) Create(ctx context.Context, plan types.ReplicaSet) 
 				if errors.As(err, &cmdErr) && cmdErr.Code == 23 {
 					return nil
 				}
+				if errors.As(err, &cmdErr) && cmdErr.Code == 74 {
+					return retry.Unrecoverable(fmt.Errorf("no replication enabled for replica set %s", plan.Name))
+				}
 				return fmt.Errorf("create replica set failed with error: %s", err)
 			}
 
@@ -61,7 +64,7 @@ func (r *ResourceReplicaSet) Exists(ctx context.Context, state types.ReplicaSet)
 
 	err := retry.Do(
 		func() error {
-			c, err := r.connect(ctx)
+			c, _, err := r.connect(ctx)
 			if err != nil {
 				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
 			}
@@ -100,7 +103,7 @@ func (r *ResourceReplicaSet) Exists(ctx context.Context, state types.ReplicaSet)
 func (r *ResourceReplicaSet) Update(ctx context.Context, state types.ReplicaSet) error {
 	err := retry.Do(
 		func() error {
-			c, err := r.connect(ctx)
+			c, _, err := r.connect(ctx)
 			if err != nil {
 				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
 			}
@@ -162,7 +165,7 @@ func (r *ResourceReplicaSet) ImportState(ctx context.Context, name string) (type
 
 	err := retry.Do(
 		func() error {
-			c, err := r.connect(ctx)
+			c, _, err := r.connect(ctx)
 			if err != nil {
 				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
 			}
@@ -204,16 +207,16 @@ func (r *ResourceReplicaSet) ImportState(ctx context.Context, name string) (type
 	return rsc.Config, nil
 }
 
-func (r *ResourceReplicaSet) connect(ctx context.Context) (*mongo.Client, error) {
+func (r *ResourceReplicaSet) connect(ctx context.Context) (*mongo.Client, bool, error) {
 	opts := options.Client().ApplyURI(r.Uri)
 
 	if opts.ReplicaSet == nil {
-		return nil, fmt.Errorf("you can't use direct connection when working with replica set")
+		return nil, false, fmt.Errorf("you can't use direct connection when working with replica set")
 	}
 
 	client, err := mongo.Connect(opts)
 	if err != nil {
-		return nil, err
+		return nil, true, err
 	}
 
 	err = client.Ping(ctx, nil)
@@ -222,10 +225,10 @@ func (r *ResourceReplicaSet) connect(ctx context.Context) (*mongo.Client, error)
 		_ = client.Disconnect(disconnectCtx)
 		cancel()
 
-		return nil, fmt.Errorf("failed to ping MongoDB: %s", err)
+		return nil, true, fmt.Errorf("failed to ping MongoDB: %s", err)
 	}
 
-	return client, nil
+	return client, false, nil
 }
 
 func (r *ResourceReplicaSet) directConnect(ctx context.Context) (*mongo.Client, error) {
@@ -265,12 +268,16 @@ func (r *ResourceReplicaSet) waitForReplicaSetReady(ctx context.Context, replica
 			}
 
 			var client *mongo.Client
+			var retryable bool
 			var status *types.ReplicaSetStatus
 			var err error
 
-			client, err = r.connect(ctx)
+			client, retryable, err = r.connect(ctx)
 			if err != nil {
-				continue
+				if retryable {
+					continue
+				}
+				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
 			}
 
 			status, err = getReplicaSetStatus(ctx, client)
