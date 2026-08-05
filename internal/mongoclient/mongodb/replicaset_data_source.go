@@ -18,7 +18,7 @@ func (d *DataSourceReplicaSet) Read(ctx context.Context) (types.ReplicaSet, erro
 		func() error {
 			c, err := d.connect(ctx)
 			if err != nil {
-				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
+				return fmt.Errorf("connection to MongoDB failed with error: %w", err)
 			}
 
 			defer func() {
@@ -29,12 +29,12 @@ func (d *DataSourceReplicaSet) Read(ctx context.Context) (types.ReplicaSet, erro
 
 			err = requiredVersion(ctx, c)
 			if err != nil {
-				return fmt.Errorf("required version check failed with error: %s", err)
+				return fmt.Errorf("required version check failed with error: %w", err)
 			}
 
 			rsc, err = getReplicaSetConfig(ctx, c)
 			if err != nil {
-				return fmt.Errorf("get replica set config failed with error: %s", err)
+				return fmt.Errorf("get replica set config failed with error: %w", err)
 			}
 
 			return nil
@@ -55,6 +55,10 @@ func (d *DataSourceReplicaSet) Read(ctx context.Context) (types.ReplicaSet, erro
 func (d *DataSourceReplicaSet) connect(ctx context.Context) (*mongo.Client, error) {
 	opts := options.Client().ApplyURI(d.Uri)
 
+	if err := opts.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid connection options: %w", err)
+	}
+
 	client, err := mongo.Connect(opts)
 	if err != nil {
 		return nil, err
@@ -66,7 +70,7 @@ func (d *DataSourceReplicaSet) connect(ctx context.Context) (*mongo.Client, erro
 		_ = client.Disconnect(disconnectCtx)
 		cancel()
 
-		return nil, fmt.Errorf("failed to ping MongoDB: %s", err)
+		return nil, fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
 
 	return client, nil

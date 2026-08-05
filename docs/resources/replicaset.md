@@ -260,11 +260,11 @@ resource "mongodb_replicaset" "incremental" {
 
 ### Optional
 
-- `protocol_version` (Number) The protocol version of the replica set.
+- `protocol_version` (Number) The protocol version of the replica set. Defaults to `1`.
 - `settings` (Attributes) The replica set settings. (see [below for nested schema](#nestedatt--settings))
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `version` (Number) The version of the replica set. Automatically incremented each time the configuration is changed.
-- `write_concern_majority_journal_default` (Boolean) Whether to use majority write concern with journaling by default.
+- `write_concern_majority_journal_default` (Boolean) Whether to use majority write concern with journaling by default. Defaults to `true`.
 
 <a id="nestedatt--members"></a>
 ### Nested Schema for `members`
@@ -276,12 +276,12 @@ Required:
 
 Optional:
 
-- `arbiter_only` (Boolean) Whether the replica set member is an arbiter only.
-- `build_indexes` (Boolean) Whether the replica set member should build indexes.
-- `hidden` (Boolean) Whether the replica set member is hidden.
-- `priority` (Number) The priority of the replica set member.
-- `secondary_delay_secs` (Number) The delay of the replica set member.
-- `votes` (Number) The number of votes of the replica set member.
+- `arbiter_only` (Boolean) Whether the replica set member is an arbiter only. Defaults to `false`.
+- `build_indexes` (Boolean) Whether the replica set member should build indexes. Defaults to `true`.
+- `hidden` (Boolean) Whether the replica set member is hidden. Defaults to `false`.
+- `priority` (Number) The priority of the replica set member. Defaults to `1`. Members that are hidden, delayed or arbiters must be given a priority of `0` explicitly.
+- `secondary_delay_secs` (Number) The delay of the replica set member. Defaults to `0`.
+- `votes` (Number) The number of votes of the replica set member. Defaults to `1`.
 
 
 <a id="nestedatt--settings"></a>
@@ -289,21 +289,21 @@ Optional:
 
 Optional:
 
-- `catch_up_takeover_delay_millis` (Number) Delay before catch-up takeover
-- `catch_up_timeout_millis` (Number) Timeout for catch-up operations (-1 for infinite)
-- `chaining_allowed` (Boolean) Whether to allow chaining of secondary replication
-- `election_timeout_millis` (Number) Timeout for elections
+- `catch_up_takeover_delay_millis` (Number) Delay before catch-up takeover. Defaults to `30000`.
+- `catch_up_timeout_millis` (Number) Timeout for catch-up operations (-1 for infinite). Defaults to `-1`.
+- `chaining_allowed` (Boolean) Whether to allow chaining of secondary replication. Defaults to `true`.
+- `election_timeout_millis` (Number) Timeout for elections. Defaults to `10000`.
 - `get_last_error_defaults` (Attributes) Default error handling settings (see [below for nested schema](#nestedatt--settings--get_last_error_defaults))
-- `heartbeat_interval_millis` (Number) Frequency of heartbeats between members
-- `heartbeat_timeout_secs` (Number) Timeout for heartbeat responses
+- `heartbeat_interval_millis` (Number) Frequency of heartbeats between members. Defaults to `2000`.
+- `heartbeat_timeout_secs` (Number) Timeout for heartbeat responses. Defaults to `10`.
 
 <a id="nestedatt--settings--get_last_error_defaults"></a>
 ### Nested Schema for `settings.get_last_error_defaults`
 
 Optional:
 
-- `w` (Number) Write concern value
-- `wtimeout` (Number) Write concern timeout
+- `w` (Number) Write concern value. Defaults to `1`.
+- `wtimeout` (Number) Write concern timeout. Defaults to `0`.
 
 
 

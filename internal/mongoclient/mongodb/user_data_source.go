@@ -18,7 +18,7 @@ func (d *DataSourceUser) Read(ctx context.Context) (types.Users, error) {
 		func() error {
 			c, err := d.connect(ctx)
 			if err != nil {
-				return fmt.Errorf("connection to MongoDB failed with error: %s", err)
+				return fmt.Errorf("connection to MongoDB failed with error: %w", err)
 			}
 
 			defer func() {
@@ -29,7 +29,7 @@ func (d *DataSourceUser) Read(ctx context.Context) (types.Users, error) {
 
 			list, err := listUsers(ctx, c)
 			if err != nil {
-				return fmt.Errorf("list users failed with error: %s", err)
+				return fmt.Errorf("list users failed with error: %w", err)
 			}
 
 			for _, i := range list.Users {
@@ -71,6 +71,10 @@ func (d *DataSourceUser) Read(ctx context.Context) (types.Users, error) {
 func (d *DataSourceUser) connect(ctx context.Context) (*mongo.Client, error) {
 	opts := options.Client().ApplyURI(d.Uri)
 
+	if err := opts.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid connection options: %w", err)
+	}
+
 	client, err := mongo.Connect(opts)
 	if err != nil {
 		return nil, err
@@ -82,7 +86,7 @@ func (d *DataSourceUser) connect(ctx context.Context) (*mongo.Client, error) {
 		_ = client.Disconnect(disconnectCtx)
 		cancel()
 
-		return nil, fmt.Errorf("failed to ping MongoDB: %s", err)
+		return nil, fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
 
 	return client, nil

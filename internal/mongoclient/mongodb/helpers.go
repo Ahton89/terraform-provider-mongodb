@@ -107,15 +107,15 @@ func getReplicaSetConfig(ctx context.Context, client *mongo.Client) (*types.Repl
 
 		// NotYetInitialized
 		if errors.As(err, &commandErr) && commandErr.Code == 94 {
-			return &rsc, fmt.Errorf("replica set not initialized. Please create, plan and apply mongodb_replicaset resource first")
+			return &rsc, fmt.Errorf("replica set not initialized. Please create, plan and apply mongodb_replicaset resource first: %w", err)
 		}
 
 		// NoReplicationEnabled
 		if errors.As(err, &commandErr) && commandErr.Code == 76 {
-			return &rsc, fmt.Errorf("replication not enabled. Please add replSetName in your mongod.conf file, then create, plan and apply mongodb_replicaset resource first")
+			return &rsc, fmt.Errorf("replication not enabled. Please add replSetName in your mongod.conf file, then create, plan and apply mongodb_replicaset resource first: %w", err)
 		}
 
-		return &rsc, fmt.Errorf("get replica set config failed with error: %s", err)
+		return &rsc, fmt.Errorf("get replica set config failed with error: %w", err)
 	}
 
 	rsc.Config.ClearVersion()
@@ -177,7 +177,7 @@ func requiredVersion(ctx context.Context, client *mongo.Client) error {
 
 	err := client.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{{"buildInfo", 1}}).Decode(&v)
 	if err != nil {
-		return fmt.Errorf("failed to get MongoDB version: %s", err)
+		return fmt.Errorf("failed to get MongoDB version: %w", err)
 	}
 
 	// Extract major version

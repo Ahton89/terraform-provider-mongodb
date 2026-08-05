@@ -32,7 +32,7 @@ func (r *ResourceUser) Create(ctx context.Context, plan types.User) error {
 
 			exist, err := userExists(ctx, c, plan.Username)
 			if err != nil {
-				return fmt.Errorf("failed to check if user exists: %s", err)
+				return fmt.Errorf("failed to check if user exists: %w", err)
 			}
 
 			if exist {
@@ -73,7 +73,7 @@ func (r *ResourceUser) Exists(ctx context.Context, state types.User) (bool, erro
 
 			c, err := r.connect(ctx)
 			if err != nil {
-				return fmt.Errorf("failed to connect to MongoDB: %s", err)
+				return fmt.Errorf("failed to connect to MongoDB: %w", err)
 			}
 
 			defer func() {
@@ -104,7 +104,7 @@ func (r *ResourceUser) Delete(ctx context.Context, state types.User) error {
 		func() error {
 			c, err := r.connect(ctx)
 			if err != nil {
-				return fmt.Errorf("failed to connect to MongoDB: %s", err)
+				return fmt.Errorf("failed to connect to MongoDB: %w", err)
 			}
 
 			defer func() {
@@ -115,7 +115,7 @@ func (r *ResourceUser) Delete(ctx context.Context, state types.User) error {
 
 			exist, err := userExists(ctx, c, state.Username)
 			if err != nil {
-				return fmt.Errorf("failed to check if user exists: %s", err)
+				return fmt.Errorf("failed to check if user exists: %w", err)
 			}
 
 			if !exist {
@@ -144,7 +144,7 @@ func (r *ResourceUser) Update(ctx context.Context, plan types.User) error {
 		func() error {
 			c, err := r.connect(ctx)
 			if err != nil {
-				return fmt.Errorf("failed to connect to MongoDB: %s", err)
+				return fmt.Errorf("failed to connect to MongoDB: %w", err)
 			}
 
 			defer func() {
@@ -155,7 +155,7 @@ func (r *ResourceUser) Update(ctx context.Context, plan types.User) error {
 
 			exist, err := userExists(ctx, c, plan.Username)
 			if err != nil {
-				return fmt.Errorf("failed to check if user exists: %s", err)
+				return fmt.Errorf("failed to check if user exists: %w", err)
 			}
 
 			if !exist {
@@ -198,7 +198,7 @@ func (r *ResourceUser) ImportState(ctx context.Context, username string) (types.
 		func() error {
 			c, err := r.connect(ctx)
 			if err != nil {
-				return fmt.Errorf("failed to connect to MongoDB: %s", err)
+				return fmt.Errorf("failed to connect to MongoDB: %w", err)
 			}
 
 			defer func() {
@@ -209,7 +209,7 @@ func (r *ResourceUser) ImportState(ctx context.Context, username string) (types.
 
 			users, err := listUsers(ctx, c)
 			if err != nil {
-				return fmt.Errorf("failed to check if user exists: %s", err)
+				return fmt.Errorf("failed to check if user exists: %w", err)
 			}
 
 			if !users.Exist(username) {
@@ -251,6 +251,10 @@ func (r *ResourceUser) ImportState(ctx context.Context, username string) (types.
 func (r *ResourceUser) connect(ctx context.Context) (*mongo.Client, error) {
 	opts := options.Client().ApplyURI(r.Uri)
 
+	if err := opts.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid connection options: %w", err)
+	}
+
 	client, err := mongo.Connect(opts)
 	if err != nil {
 		return nil, err
@@ -262,7 +266,7 @@ func (r *ResourceUser) connect(ctx context.Context) (*mongo.Client, error) {
 		_ = client.Disconnect(disconnectCtx)
 		cancel()
 
-		return nil, fmt.Errorf("failed to ping MongoDB: %s", err)
+		return nil, fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
 
 	return client, nil
