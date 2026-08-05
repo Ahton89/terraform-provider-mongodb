@@ -251,6 +251,10 @@ func (r *ResourceUser) ImportState(ctx context.Context, username string) (types.
 func (r *ResourceUser) connect(ctx context.Context) (*mongo.Client, error) {
 	opts := options.Client().ApplyURI(r.Uri)
 
+	if err := opts.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid connection options: %w", err)
+	}
+
 	client, err := mongo.Connect(opts)
 	if err != nil {
 		return nil, err

@@ -163,6 +163,10 @@ func (r *ResourceDatabase) ImportState(ctx context.Context, name string) (types.
 func (r *ResourceDatabase) connect(ctx context.Context) (*mongo.Client, error) {
 	opts := options.Client().ApplyURI(r.Uri)
 
+	if err := opts.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid connection options: %w", err)
+	}
+
 	client, err := mongo.Connect(opts)
 	if err != nil {
 		return nil, err

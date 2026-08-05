@@ -55,6 +55,10 @@ func (d *DataSourceReplicaSet) Read(ctx context.Context) (types.ReplicaSet, erro
 func (d *DataSourceReplicaSet) connect(ctx context.Context) (*mongo.Client, error) {
 	opts := options.Client().ApplyURI(d.Uri)
 
+	if err := opts.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid connection options: %w", err)
+	}
+
 	client, err := mongo.Connect(opts)
 	if err != nil {
 		return nil, err
