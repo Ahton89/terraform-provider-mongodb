@@ -123,6 +123,7 @@ func (m *mongoDBProvider) DataSources(_ context.Context) []func() datasource.Dat
 		DataSourceDatabases,
 		DataSourceUsers,
 		DataSourceReplicaSet,
+		DataSourceDefaultRWConcern,
 	}
 }
 
@@ -131,5 +132,6 @@ func (m *mongoDBProvider) Resources(_ context.Context) []func() resource.Resourc
 		ResourceDatabase,
 		ResourceUser,
 		ResourceReplicaSet,
+		ResourceDefaultRWConcern,
 	}
 }

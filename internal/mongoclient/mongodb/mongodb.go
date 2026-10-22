@@ -37,6 +37,12 @@ type DataSourceReplicaSet struct {
 	RetryDelay    time.Duration
 }
 
+type DataSourceDefaultRWConcern struct {
+	Uri           string
+	RetryAttempts uint
+	RetryDelay    time.Duration
+}
+
 func (d *DataSource) DataSource() interfaces.DataSource {
 	return &DataSource{
 		Uri:           d.Uri,
@@ -69,6 +75,14 @@ func (d *DataSource) ReplicaSet() interfaces.DataSourceReplicaSet {
 	}
 }
 
+func (d *DataSource) DefaultRWConcern() interfaces.DataSourceDefaultRWConcern {
+	return &DataSourceDefaultRWConcern{
+		Uri:           d.Uri,
+		RetryAttempts: d.RetryAttempts,
+		RetryDelay:    d.RetryDelay,
+	}
+}
+
 /* RESOURCE */
 
 type Resource struct {
@@ -90,6 +104,12 @@ type ResourceUser struct {
 }
 
 type ResourceReplicaSet struct {
+	Uri           string
+	RetryAttempts uint
+	RetryDelay    time.Duration
+}
+
+type ResourceDefaultRWConcern struct {
 	Uri           string
 	RetryAttempts uint
 	RetryDelay    time.Duration
@@ -121,6 +141,14 @@ func (r *Resource) Database() interfaces.ResourceDatabase {
 
 func (r *Resource) ReplicaSet() interfaces.ResourceReplicaSet {
 	return &ResourceReplicaSet{
+		Uri:           r.Uri,
+		RetryAttempts: r.RetryAttempts,
+		RetryDelay:    r.RetryDelay,
+	}
+}
+
+func (r *Resource) DefaultRWConcern() interfaces.ResourceDefaultRWConcern {
+	return &ResourceDefaultRWConcern{
 		Uri:           r.Uri,
 		RetryAttempts: r.RetryAttempts,
 		RetryDelay:    r.RetryDelay,

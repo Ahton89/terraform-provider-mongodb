@@ -19,6 +19,7 @@ type DataSource interface {
 	Database() DataSourceDatabase
 	User() DataSourceUser
 	ReplicaSet() DataSourceReplicaSet
+	DefaultRWConcern() DataSourceDefaultRWConcern
 }
 
 type DataSourceDatabase interface {
@@ -33,12 +34,17 @@ type DataSourceReplicaSet interface {
 	Read(ctx context.Context) (types.ReplicaSet, error)
 }
 
+type DataSourceDefaultRWConcern interface {
+	Read(ctx context.Context) (types.DefaultRWConcernInfo, error)
+}
+
 /* RESOURCE */
 
 type Resource interface {
 	Database() ResourceDatabase
 	User() ResourceUser
 	ReplicaSet() ResourceReplicaSet
+	DefaultRWConcern() ResourceDefaultRWConcern
 }
 
 type ResourceDatabase interface {
@@ -61,4 +67,11 @@ type ResourceReplicaSet interface {
 	Update(ctx context.Context, plan types.ReplicaSet) error
 	Exists(ctx context.Context, state types.ReplicaSet) (types.ReplicaSet, bool, error)
 	ImportState(ctx context.Context, name string) (types.ReplicaSet, error)
+}
+
+type ResourceDefaultRWConcern interface {
+	Create(ctx context.Context, plan types.DefaultRWConcern) error
+	Read(ctx context.Context) (types.DefaultRWConcern, error)
+	Update(ctx context.Context, plan, state types.DefaultRWConcern) error
+	ImportState(ctx context.Context) (types.DefaultRWConcern, error)
 }

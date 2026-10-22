@@ -13,6 +13,7 @@ The MongoDB provider enables Terraform to manage MongoDB infrastructure declarat
 - **Database Management**: Create and delete MongoDB databases
 - **User Management**: Full CRUD operations for users with role-based permissions
 - **Replica Set Configuration**: Initialize and update replica set configurations
+- **Default Read/Write Concern**: Manage cluster-wide default read and write concern
 - **Import Support**: Import existing MongoDB resources into Terraform state
 - **Timeout Configuration**: Configurable timeouts for all operations
 - **Retry Logic**: Built-in retry mechanism with exponential backoff
@@ -26,7 +27,7 @@ terraform {
   required_providers {
     mongodb = {
       source  = "registry.terraform.io/Ahton89/mongodb"
-      version = "~> 0.2"
+      version = "~> 0.3"
     }
   }
 }
@@ -198,6 +199,9 @@ terraform import 'mongodb_user.example' username
 
 # Replica Set
 terraform import 'mongodb_replicaset.example' replicaset_name
+
+# Default Read/Write Concern
+terraform import 'mongodb_default_rw_concern.example' default
 ```
 
 See individual resource documentation for detailed import instructions.
@@ -216,6 +220,11 @@ See individual resource documentation for detailed import instructions.
 - **No Delete Support**: Replica sets cannot be removed via Terraform (requires manual intervention)
 - **Incremental Updates**: Add/modify only one member at a time after initial creation
 - **Name Immutability**: Replica set name cannot be changed after creation
+
+### Default Read/Write Concern Resources
+- **Write Concern Cannot Be Unset**: Since MongoDB 5.0 the default write concern cannot be unset or reverted to the implicit default
+- **No Delete Support**: Destroy fails, remove the resource from the state with a `removed` block or `terraform state rm`
+- **Singleton**: Declare only one resource per replica set or sharded cluster
 
 ## Security Considerations
 
@@ -308,6 +317,8 @@ Error: unsupported MongoDB version
 - [Resource: mongodb_database](resources/database.md)
 - [Resource: mongodb_user](resources/user.md)
 - [Resource: mongodb_replicaset](resources/replicaset.md)
+- [Resource: mongodb_default_rw_concern](resources/default_rw_concern.md)
 - [Data Source: mongodb_databases](data-sources/databases.md)
 - [Data Source: mongodb_users](data-sources/users.md)
 - [Data Source: mongodb_replicaset](data-sources/replicaset.md)
+- [Data Source: mongodb_default_rw_concern](data-sources/default_rw_concern.md)

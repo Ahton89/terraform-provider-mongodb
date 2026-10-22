@@ -16,7 +16,8 @@ A Terraform provider for managing MongoDB infrastructure as code. This provider 
 - **Database Management** - Create, import, and delete MongoDB databases
 - **User Management** - Full CRUD operations for MongoDB users with role-based access control (RBAC)
 - **Replica Set Configuration** - Initialize and update MongoDB replica sets for high availability
-- **Data Sources** - Query existing databases, users, and replica set configurations
+- **Default Read/Write Concern** - Manage cluster-wide default read and write concern
+- **Data Sources** - Query existing databases, users, replica set configurations, and default read/write concern
 - **Import Support** - Import existing MongoDB resources into Terraform state
 - **Timeouts** - Configurable timeouts for all resource operations
 - **Retry Logic** - Built-in retry mechanism with exponential backoff for transient errors
@@ -48,7 +49,7 @@ terraform {
   required_providers {
     mongodb = {
       source  = "Ahton89/mongodb"
-      version = "~> 0.2"
+      version = "~> 0.3"
     }
   }
 }
@@ -140,6 +141,22 @@ resource "mongodb_replicaset" "main" {
 }
 ```
 
+### Default Read/Write Concern
+
+Set cluster-wide defaults:
+
+```hcl
+resource "mongodb_default_rw_concern" "this" {
+  default_read_concern = {
+    level = "majority"
+  }
+
+  default_write_concern = {
+    w = "majority"
+  }
+}
+```
+
 ### Data Sources
 
 Query existing resources:
@@ -164,6 +181,13 @@ data "mongodb_replicaset" "current" {}
 
 output "replica_set_name" {
   value = data.mongodb_replicaset.current.name
+}
+
+# Get default read/write concern
+data "mongodb_default_rw_concern" "current" {}
+
+output "default_write_concern_source" {
+  value = data.mongodb_default_rw_concern.current.default_write_concern_source
 }
 ```
 
@@ -243,6 +267,7 @@ Supported timeout operations:
 | **mongodb_database** | ✅ | ✅ | ❌ | ✅ |
 | **mongodb_user** | ✅ | ✅ | ✅ | ✅ |
 | **mongodb_replicaset** | ✅ | ✅ | ✅ | ❌ |
+| **mongodb_default_rw_concern** | ✅ | ✅ | ✅ | ❌ |
 
 ## Importing Existing Resources
 
@@ -266,6 +291,12 @@ terraform import mongodb_user.example username
 terraform import mongodb_replicaset.example replicaset_name
 ```
 
+### Default Read/Write Concern
+
+```bash
+terraform import mongodb_default_rw_concern.example default
+```
+
 ## Important Limitations
 
 ### Database Resources
@@ -285,6 +316,12 @@ terraform import mongodb_replicaset.example replicaset_name
 - ⚠️ **Name immutable** - Replica set name cannot be changed after creation
 - ⚙️ **Incremental member updates** - Add or modify only one member at a time after initial creation
 
+### Default Read/Write Concern Resources
+
+- 🔒 **Write concern cannot be unset** - Since MongoDB 5.0 the default write concern cannot be unset or reverted to the implicit default
+- 🚫 **No delete support** - Destroy fails, remove the resource from the state with a `removed` block or `terraform state rm`
+- 1️⃣ **Singleton** - Declare only one resource per replica set or sharded cluster
+
 ## Examples
 
 Complete working examples are available in the [`examples/`](examples/) directory:
@@ -295,6 +332,8 @@ Complete working examples are available in the [`examples/`](examples/) director
 - [**Databases Data Source**](examples/databases_datasource/) - Query existing databases
 - [**Users Data Source**](examples/users_datasource/) - List MongoDB users
 - [**Replica Set Data Source**](examples/replicaset_datasource/) - Read replica set configuration
+- [**Default Read/Write Concern**](examples/default_rw_concern/) - Manage cluster-wide defaults
+- [**Default Read/Write Concern Data Source**](examples/default_rw_concern_datasource/) - Read cluster-wide defaults
 
 ## Documentation
 

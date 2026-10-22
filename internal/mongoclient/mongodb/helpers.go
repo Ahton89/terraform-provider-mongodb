@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -166,6 +167,73 @@ func isReplicaSetReady(status *types.ReplicaSetStatus, replicaSetName string) bo
 	}
 
 	return hasPrimary && allMembersOk
+}
+
+/* DEFAULT RW CONCERN */
+
+// getDefaultRWConcern returns the cluster-wide default read and write concern.
+func getDefaultRWConcern(ctx context.Context, client *mongo.Client) (*types.RWConcernDefaults, error) {
+	d := types.RWConcernDefaults{}
+
+	err := client.Database(types.DefaultDatabase).RunCommand(ctx, bson.D{{"getDefaultRWConcern", 1}}).Decode(&d)
+	if err != nil {
+		return nil, err
+	}
+
+	return &d, nil
+}
+
+// setDefaultRWConcern sets the cluster-wide default read and write concern.
+// A nil document leaves the current value unchanged, an empty one unsets it.
+func setDefaultRWConcern(ctx context.Context, client *mongo.Client, readConcern, writeConcern bson.D) error {
+	cmd := bson.D{{"setDefaultRWConcern", 1}}
+
+	if readConcern != nil {
+		cmd = append(cmd, bson.E{Key: "defaultReadConcern", Value: readConcern})
+	}
+
+	if writeConcern != nil {
+		cmd = append(cmd, bson.E{Key: "defaultWriteConcern", Value: writeConcern})
+	}
+
+	cmd = append(cmd, bson.E{Key: "writeConcern", Value: bson.D{{"w", "majority"}}})
+
+	return client.Database(types.DefaultDatabase).RunCommand(ctx, cmd).Err()
+}
+
+func readConcernDocument(rc *types.ReadConcern) bson.D {
+	if rc == nil {
+		return nil
+	}
+
+	return bson.D{{"level", rc.Level}}
+}
+
+func writeConcernDocument(wc *types.WriteConcern) bson.D {
+	if wc == nil {
+		return nil
+	}
+
+	doc := bson.D{{"w", writeConcernW(wc.W)}}
+
+	if wc.Journal != nil {
+		doc = append(doc, bson.E{Key: "j", Value: *wc.Journal})
+	}
+
+	if wc.WTimeout != nil {
+		doc = append(doc, bson.E{Key: "wtimeout", Value: *wc.WTimeout})
+	}
+
+	return doc
+}
+
+// writeConcernW converts numeric w to a number, MongoDB treats a string w as a tag set name.
+func writeConcernW(w string) any {
+	if n, err := strconv.ParseInt(w, 10, 32); err == nil {
+		return int32(n)
+	}
+
+	return w
 }
 
 // requiredVersion checks if the current MongoDB version is supported by the provider.
