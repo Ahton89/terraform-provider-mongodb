@@ -1,8 +1,8 @@
 terraform {
   required_providers {
     mongodb = {
-      source = "registry.terraform.io/Ahton89/mongodb"
-      version = "= 0.2.13"
+      source  = "registry.terraform.io/Ahton89/mongodb"
+      version = "= 0.3.0"
     }
   }
 }

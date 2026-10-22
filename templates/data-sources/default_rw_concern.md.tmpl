@@ -1,0 +1,53 @@
+---
+page_title: "{{.Type}} {{.Name}} - {{.ProviderName}}"
+subcategory: ""
+description: |-
+{{ .Description | plainmarkdown | trimspace | prefixlines "  " }}
+---
+
+# {{.Type}}: {{.Name}}
+
+{{ .Description | trimspace }}
+
+Use the `*_source` attributes to tell where each value comes from:
+
+- `implicit` - the server default, nothing was set with `setDefaultRWConcern`
+- `global` - set explicitly with `setDefaultRWConcern`
+
+-> **Note:** MongoDB reports the implicit default read concern (`level = "local"`), but not the implicit default write concern. When `default_write_concern_source` is `implicit`, `default_write_concern` is `null`.
+
+## Example Usage
+
+### Read Current Defaults
+
+```terraform
+data "mongodb_default_rw_concern" "current" {}
+
+output "default_read_concern_level" {
+  value = data.mongodb_default_rw_concern.current.default_read_concern.level
+}
+
+output "default_write_concern_w" {
+  value = data.mongodb_default_rw_concern.current.default_write_concern.w
+}
+```
+
+### Check Whether Write Concern Is Set Explicitly
+
+```terraform
+data "mongodb_default_rw_concern" "current" {}
+
+output "write_concern_is_global" {
+  value = data.mongodb_default_rw_concern.current.default_write_concern_source == "global"
+}
+```
+
+{{ .SchemaMarkdown | trimspace }}
+
+## Related Resources
+
+- [mongodb_default_rw_concern](../resources/default_rw_concern.md) - Manage cluster-wide defaults
+
+## MongoDB Documentation
+
+- [getDefaultRWConcern](https://www.mongodb.com/docs/manual/reference/command/getDefaultRWConcern/)

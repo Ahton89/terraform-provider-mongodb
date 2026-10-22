@@ -1,0 +1,149 @@
+---
+page_title: "{{.Type}} {{.Name}} - {{.ProviderName}}"
+subcategory: ""
+description: |-
+{{ .Description | plainmarkdown | trimspace | prefixlines "  " }}
+---
+
+# {{.Type}}: {{.Name}}
+
+{{ .Description | trimspace }}
+
+Sets the global default read and write concern for a replica set or sharded cluster. MongoDB applies these defaults only to operations that do not explicitly specify a read or write concern.
+
+~> **Important:** Starting in MongoDB 5.0, once the cluster-wide default write concern is set it **cannot be unset**. Removing `default_write_concern` from the configuration fails at plan time, and the resource **does not support deletion** (see [Deletion](#deletion)).
+
+-> **Note:** This is a singleton. Declare only one `mongodb_default_rw_concern` resource per replica set or sharded cluster.
+
+## Example Usage
+
+### Read and Write Concern
+
+```terraform
+resource "mongodb_default_rw_concern" "this" {
+  default_read_concern = {
+    level = "majority"
+  }
+
+  default_write_concern = {
+    w        = "majority"
+    journal  = true
+    wtimeout = 5000
+  }
+}
+```
+
+### Read Concern Only
+
+```terraform
+resource "mongodb_default_rw_concern" "this" {
+  default_read_concern = {
+    level = "local"
+  }
+}
+```
+
+### Numeric Write Concern
+
+```terraform
+resource "mongodb_default_rw_concern" "this" {
+  default_write_concern = {
+    w = 2
+  }
+}
+```
+
+{{ .SchemaMarkdown | trimspace }}
+
+## Import
+
+The resource is a singleton and is imported with the `default` ID:
+
+```bash
+terraform import mongodb_default_rw_concern.this default
+```
+
+Only the defaults set explicitly with `setDefaultRWConcern` (source `global`) are imported. Implicit server defaults are ignored.
+
+## Behavior
+
+### Managed Concerns
+The resource manages only the concerns present in its configuration. If only `default_read_concern` is configured, an existing global default write concern is left untouched and is not tracked.
+
+### Changes
+- Changing values sends `setDefaultRWConcern` with the new configuration.
+- Removing `default_read_concern` unsets the default read concern, MongoDB falls back to the implicit default.
+- Removing `default_write_concern` is not allowed once it has been applied.
+
+### Deletion
+~> **Warning:** This resource does **not support deletion**. `terraform destroy` fails with an error.
+
+The default write concern **cannot be unset or reverted to the implicit default** — this is a MongoDB limitation since 5.0. Once the cluster-wide defaults are managed by Terraform, they stay managed until the resource is explicitly removed from the state.
+
+To stop managing the defaults, remove the resource from the state with a `removed` block (Terraform 1.7+):
+
+```terraform
+removed {
+  from = mongodb_default_rw_concern.this
+
+  lifecycle {
+    destroy = false
+  }
+}
+```
+
+Or manually:
+
+```bash
+terraform state rm mongodb_default_rw_concern.this
+```
+
+In both cases the default read and write concern remain on the server with their last applied values.
+
+-> **Note:** Removing the `default_read_concern` block from the configuration (without destroying the resource) does unset the default read concern on the server.
+
+### Command Write Concern
+The provider runs `setDefaultRWConcern` with `writeConcern: { w: "majority" }`, so the command returns only after the change is replicated to a majority of members.
+
+## Connection Requirements
+
+- **Replica set:** the command must reach the primary, use a replica set connection string.
+- **Sharded cluster:** the command must be run against `mongos`.
+
+```terraform
+provider "mongodb" {
+  connection_string = "mongodb://user:pass@host1:27017,host2:27017,host3:27017/admin?replicaSet=rs0"
+}
+```
+
+## Required Privileges
+
+The user requires the `setDefaultRWConcern` privilege action, which is provided by the built-in `clusterManager` role.
+
+## Timeouts
+
+- `create` - (Default: 15m)
+- `read` - (Default: 15m)
+- `update` - (Default: 15m)
+
+## Troubleshooting
+
+### Error: Default write concern cannot be unset
+
+Keep the `default_write_concern` block in the configuration and change its values instead of removing it.
+
+### Error: not primary
+
+The provider is connected to a secondary. Use a replica set connection string so the command is routed to the primary.
+
+## Related Resources
+
+- [Data Source: mongodb_default_rw_concern](../data-sources/default_rw_concern.md) - Read current defaults, including implicit ones
+- [mongodb_replicaset](replicaset.md) - Manage replica set configuration
+
+## MongoDB Documentation
+
+- [setDefaultRWConcern](https://www.mongodb.com/docs/manual/reference/command/setDefaultRWConcern/)
+- [getDefaultRWConcern](https://www.mongodb.com/docs/manual/reference/command/getDefaultRWConcern/)
+- [Read Concern](https://www.mongodb.com/docs/manual/reference/read-concern/)
+- [Write Concern](https://www.mongodb.com/docs/manual/reference/write-concern/)
